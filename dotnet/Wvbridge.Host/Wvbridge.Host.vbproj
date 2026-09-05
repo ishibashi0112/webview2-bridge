@@ -11,10 +11,25 @@
     <AssemblyName>Wvbridge.Host</AssemblyName>
     <StartupObject>Wvbridge.Host.Program</StartupObject>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- vite build の出力。ビルド後に $(OutDir)wwwroot へコピーされる -->
+    <WebDistDir>$(MSBuildProjectDirectory)\..\..\apps\web\dist\</WebDistDir>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
     <ProjectReference Include="..\Wvbridge.Contract\Wvbridge.Contract.vbproj" />
     <ProjectReference Include="..\Wvbridge.Impl\Wvbridge.Impl.vbproj" />
   </ItemGroup>
+
+  <!-- apps/web/dist → $(OutDir)wwwroot（古いアセットが残らないよう毎回入れ替える） -->
+  <Target Name="CopyWebDist" AfterTargets="Build" Condition="Exists('$(WebDistDir)index.html')">
+    <ItemGroup>
+      <WebDistFiles Include="$(WebDistDir)**\*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(OutDir)wwwroot" />
+    <Copy SourceFiles="@(WebDistFiles)" DestinationFiles="@(WebDistFiles->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Message Importance="high" Text="wvbridge: copied @(WebDistFiles->Count()) file(s) from apps/web/dist to $(OutDir)wwwroot" />
+  </Target>
+  <Target Name="WarnMissingWebDist" AfterTargets="Build" Condition="!Exists('$(WebDistDir)index.html')">
+    <Message Importance="high" Text="wvbridge: apps/web/dist not found; run `pnpm build:web` to bundle the UI into wwwroot (or set WVBRIDGE_DEV_URL for the Vite dev server)" />
+  </Target>
 </Project>
