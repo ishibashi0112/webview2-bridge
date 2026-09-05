@@ -1,7 +1,7 @@
 # HANDOFF — WinForms(VB.NET 4.8) + WebView2 + Vite/React ブリッジ基盤
 
 このファイルは Claude Code への引き継ぎ資料。リポジトリ直下に置き、最初のプロンプトで「HANDOFF.md を読んで着手」と指示する。
-仮の名前は `wvbridge`。気に入らなければ最初に改名して以降は統一する。
+名前は `webview2-bridge`（リポジトリ名に合わせて確定）。npm は `@ishibashi0112/webview2-bridge-gen` / `@ishibashi0112/webview2-bridge-client`、.NET は `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`、環境変数は `WEBVIEW2_BRIDGE_DEV_URL`。
 
 ---
 
@@ -40,12 +40,13 @@ VB.NET WinForms（.NET Framework 4.8）に WebView2 を載せ、UI を Vite + Re
 ## 4. リポジトリ構成
 
 ```
-wvbridge/
+webview2-bridge/
   package.json                 # pnpm workspace root
   pnpm-workspace.yaml
+  webview2-bridge.gen.json     # ジェネレータ設定（入力 contract / 出力先）
   HANDOFF.md                   # このファイル
   CLAUDE.md                    # §11 の内容
-  contract/
+  contract/                    # private workspace package "@webview2-bridge/contract"
     contract.ts                # zod による契約定義（唯一の正）
     contract.schema.json       # 生成: JSON Schema 中間表現（コミットする）
   packages/
@@ -54,7 +55,7 @@ wvbridge/
         define.ts              # defineContract()
         to-schema.ts           # zod → contract.schema.json
         emit-ts.ts             # → apps/web/src/generated/
-        emit-vb.ts             # → dotnet/Wvbridge.Contract/Generated/
+        emit-vb.ts             # → dotnet/WebView2Bridge.Contract/Generated/
       test/                    # Vitest スナップショット
     client/                    # フロント側ランタイム（TS）
       src/
@@ -68,11 +69,12 @@ wvbridge/
       src/mock/handlers.ts     # MemoryTransport 用ハンドラ
   dotnet/
     Directory.Build.props      # LangVersion, Nullable 等の共通設定
-    Wvbridge.sln
-    Wvbridge.slnf              # 旧プロジェクトを除外したフィルタ（将来用）
-    Wvbridge.Contract/         # netstandard2.0 / VB / 生成 DTO・Interface・Dispatcher + ランタイム
-    Wvbridge.Impl/             # net48 / VB / 人間が書く実装（DB・サーバー）
-    Wvbridge.Host/             # net48 / VB / WinForms exe + WebView2
+    WebView2Bridge.sln
+    WebView2Bridge.slnf              # 旧プロジェクトを除外したフィルタ（将来用）
+    WebView2Bridge.Contract/         # netstandard2.0 / VB / 生成 DTO・Interface・Dispatcher + ランタイム
+    WebView2Bridge.Impl/             # net48 / VB / 人間が書く実装（DB・サーバー）
+    WebView2Bridge.Host/             # net48 / VB / WinForms exe + WebView2
+    WebView2Bridge.Contract.Tests/   # net8.0 / VB / xUnit（Dispatcher の単体テスト。Mac で dotnet test 可）
 ```
 
 ## 5. 通信プロトコル（JSON-RPC 2.0 サブセット）
@@ -102,7 +104,7 @@ Host → Web: `CoreWebView2.PostWebMessageAsJson(json)`。Web 側は `window.chr
 ```ts
 // contract/contract.ts
 import { z } from "zod";
-import { defineContract } from "@wvbridge/gen";
+import { defineContract } from "@ishibashi0112/webview2-bridge-gen";
 
 const Part = z.object({
   partNo: z.string(),
@@ -135,7 +137,7 @@ export type Contract = typeof contract;
 - `contract-types.ts`: 各 method の `Input` / `Output` 型、イベント型、`MethodMap` / `EventMap`
 - 型は `z.infer` で契約から直接取れるので、TS 出力は最小限でよい。クライアント本体は `packages/client` の `createClient` が型パラメータで受ける
 
-### 7.2 VB 出力（`dotnet/Wvbridge.Contract/Generated/`）
+### 7.2 VB 出力（`dotnet/WebView2Bridge.Contract/Generated/`）
 - `Dto.vb`: JSON Schema の object ごとに `Public Class`。プロパティは PascalCase、`<JsonProperty("camelCase")>` を付与
 - `Interfaces.vb`: namespace ごとに `Public Interface IPartsApi` / `Function Search(req As PartsSearchRequest) As Task(Of PartsSearchResponse)`
 - `Dispatcher.Generated.vb`: `Partial Public Class Dispatcher` に `Register(api As IPartsApi)` と、`method` 文字列 → デシリアライズ → Interface 呼び出し → シリアライズ の分岐
@@ -182,20 +184,20 @@ export function createClient<C extends ContractShape>(contract: C, transport: Tr
 
 ## 9. VB 側（`dotnet/`）
 
-### 9.1 Wvbridge.Contract（netstandard2.0, VB）
+### 9.1 WebView2Bridge.Contract（netstandard2.0, VB）
 - 生成物（§7.2）
 - ランタイム: `JsonRpc.vb`（封筒の型・エラーコード定数）、`Dispatcher.vb`（`Partial Public Class Dispatcher` の手書き側。`Function HandleAsync(requestJson As String) As Task(Of String)`、未登録メソッドは -32601、例外は -32000 に変換）
 - **WebView2 に依存しない**（netstandard2.0 でビルドできることが重要。Mac でもビルド可）
 - NuGet: Newtonsoft.Json のみ
 
-### 9.2 Wvbridge.Impl（net48, VB）
+### 9.2 WebView2Bridge.Impl（net48, VB）
 - `PartsApi.vb`: `Implements IPartsApi`。Phase 3 ではスタブ（固定データ）でよい
 - 将来ここに SqlClient / Oracle.ManagedDataAccess（Framework 版）を閉じ込める
 
-### 9.3 Wvbridge.Host（net48, VB, WinForms exe）
+### 9.3 WebView2Bridge.Host（net48, VB, WinForms exe）
 - `WebViewBridge.vb`: `WebView2` コントロールと `Dispatcher` を受け取り、`WebMessageReceived` → `HandleAsync` → `PostWebMessageAsJson`。`Emit(method, payload)` を公開
 - `MainForm.vb`: Dock=Fill の WebView2。`EnsureCoreWebView2Async` 後に
-  - Debug かつ環境変数 `WVBRIDGE_DEV_URL` があれば `Navigate(そのURL)`（通常 `http://localhost:5173`）
+  - Debug かつ環境変数 `WEBVIEW2_BRIDGE_DEV_URL` があれば `Navigate(そのURL)`（通常 `http://localhost:5173`）
   - それ以外は `SetVirtualHostNameToFolderMapping("app.local", <exe隣の wwwroot>, Allow)` → `Navigate("https://app.local/index.html")`
   - `Settings.AreDevToolsEnabled = True`（F12 で DevTools）
 - `vite build` の `dist` を `wwwroot` として出力ディレクトリにコピーする MSBuild ターゲット（または pnpm スクリプト）
@@ -209,13 +211,13 @@ export function createClient<C extends ContractShape>(contract: C, transport: Tr
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <RootNamespace>Wvbridge.Host</RootNamespace>
+    <RootNamespace>WebView2Bridge.Host</RootNamespace>
     <OptionStrict>On</OptionStrict>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="最新安定版" />
-    <ProjectReference Include="..\Wvbridge.Contract\Wvbridge.Contract.vbproj" />
-    <ProjectReference Include="..\Wvbridge.Impl\Wvbridge.Impl.vbproj" />
+    <ProjectReference Include="..\WebView2Bridge.Contract\WebView2Bridge.Contract.vbproj" />
+    <ProjectReference Include="..\WebView2Bridge.Impl\WebView2Bridge.Impl.vbproj" />
   </ItemGroup>
 </Project>
 ```
@@ -227,59 +229,56 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - 日付の往復: 初期は ISO 8601 文字列。VB 側で `Date` にしたくなったら `format: date-time` → `Date` のマッピングを追加
 - バイナリ: 初期スコープ外（必要なら base64 文字列）
 - 大きな配列（数万行）の性能: 初期は気にしない。問題が出たら分割送信を検討
-- パッケージ名 `@wvbridge/*` は仮
+- ジェネレータの名前付け規則（DTO クラス名の導出）: 実装しながら決め、スナップショットで固定する
+- パッケージ名は `@ishibashi0112/webview2-bridge-gen` / `@ishibashi0112/webview2-bridge-client` で確定（workspace 内でも同名で参照する）
 
-### 10.1 実装時に決めた事項（2026-09-05、Phase 0〜3）
+### 10.1 実装中に決めたこと（2026-09-05, Phase 0〜3 コード作成）
 
-**名前・ツール**
-- 名前は `wvbridge` のまま（リポジトリ名 `webview2-bridge` とは別名）。npm は `@wvbridge/*`、VB は `Wvbridge.*`
-- Vite+（`vp`）は前提にしない。package.json のスクリプトは素の `vite` / `vitest` / `tsc`（`vp` は手元で任意に使う）
-- 採用バージョン: TypeScript 5.9、Vite 7、Vitest 4、@vitejs/plugin-react 5、Zod 4.5、React 19、Newtonsoft.Json 13.0.4、Microsoft.Web.WebView2 1.0.4191.47
-- `contract/` は workspace パッケージ `@wvbridge/contract`（`contract.ts` を export）。生成 TS は `import type { contract } from "@wvbridge/contract"` で型を参照する
-- `defineContract` と `ContractShape` 型は `@wvbridge/gen`（`packages/gen/src/define.ts`）に置く。`@wvbridge/client` は型だけ gen に依存する（Phase 4 で切り出すときに見直す）
+**環境・ビルド**
+- Mac の .NET SDK は `dotnet-install.sh --channel 8.0` で `~/.dotnet` に導入した（sudo 不要・削除可）。`dotnet/global.json` は 8.0.100 以上を `rollForward: latestMajor` で許容するので、Windows は VS 2022 同梱の SDK でそのまま通る
+- `Directory.Build.props` で Mac 上は `EnableWindowsTargeting=true` にした。結果、Contract だけでなく Impl / Host（WinForms + WebView2）も Mac で **ビルド** は通る（実行は Windows のみ）
+- `dotnet/WebView2Bridge.Contract.Tests`（xUnit, **net8.0**）を追加。製品コードは netstandard2.0 / net48 のままで、テストだけ Mac で `dotnet test` するための例外
+- pnpm は 11 系。`pnpm-workspace.yaml` の `allowBuilds` で esbuild のみ postinstall を許可
 
-**JSON Schema（`contract.schema.json`）**
-- 契約全体を 1 つの object（`{ methods: { ns: { method: { input, output } } }, events: { name } }`）に包んで `z.toJSONSchema()` にかけ、1 ドキュメントにする。`.meta({ id: "Part" })` を付けたスキーマは `$defs` に 1 回だけ出て `$ref` で参照される → VB では 1 クラス
-- `io` は既定（output）。`.default()` は input 側では required 扱いになるので契約では使わない（値の既定は VB 側で持つ）
-- `z.number().int()` は `Integer`。`Long` にしたいときは `.meta({ format: "int64" })` を付ける（`z.int64()` は bigint になり JSON Schema にできない）
-- 対応する型: string / number / integer / boolean / array / object / string enum / `X | null`。それ以外（union、unknown、record、tuple、再帰）はジェネレータがエラーで止まる
+**契約とジェネレータ**
+- `contract/` は private な workspace パッケージ `@webview2-bridge/contract` にした。apps/web と生成 TS はこの名前で import する（相対パス `../../../contract` を避けるため）。公開しない
+- ジェネレータの設定はリポジトリ直下の `webview2-bridge.gen.json`。`pnpm gen` で生成、`pnpm gen:check` で最新か検査（CI 用）
+- JSON Schema は契約全体を 1 つの `z.object` に包んで `z.toJSONSchema(root, { io: "output" })` を 1 回だけ呼ぶ。`.meta({ id })` 付きスキーマがルート `$defs` に 1 回だけ集約され `#/$defs/<id>` で参照される
+- **DTO 名の規則**（スナップショットで固定）
+  - 共有したい object / enum には `.meta({ id: "Part" })` を付ける → その名前のクラス（TS は `Part` 型も export）
+  - method 入出力: `<Namespace><Method>Request` / `<Namespace><Method>Response`、イベント: `<Name>Event`
+  - 無名の入れ子 object: `<親クラス><Prop>`、配列要素: 単数化（`items`→`Item`, `children`→`Child`, `ies`→`y`, それ以外は `<Prop>Item`）
+  - string enum: `<親クラス><Prop>` の `NotInheritable Class` に `Public Const`（プロパティの型は String）。`.meta({ id })` を付ければその名前
+  - 名前衝突はエラーで止める（`.meta({ id })` で回避する）
+- 型マッピングの追加: `z.record(z.string(), T)` → `Dictionary(Of String, T)`、`z.unknown()/z.any()` → `JToken`、`z.string().nullable()` → `type: [X, "null"]` を null 許容として解釈。union / intersection / z.date / bigint はエラー
+- **optional の JSON 表現**: required でないプロパティには `NullValueHandling.Ignore` を付け、Nothing なら JSON からキーごと省く（zod の `.optional()` は `null` を拒否するため）。required かつ nullable は `null` を出す。値型は optional / nullable のとき `Nullable(Of T)`
+- required な `List` / `Dictionary` プロパティは `New` で初期化しておく（実装が詰め忘れても `[]` が返る）
+- 生成ファイルは `Namespace Global.WebView2Bridge.Contract` に置く（RootNamespace に依存しない）。共通ヘッダに `Imports System`
+- `Dispatcher.Generated.vb` は `RegisterHandler(Of TReq, TRes)("parts.search", AddressOf api.Search)` を並べるだけ。デシリアライズ・エラー変換は手書きの `Dispatcher.vb` が持つ
+- イベントは namespace を持たないので、生成するのは単一の `BridgeEvents` クラス。発行先は Contract の `IBridgeEmitter`（Host の `WebViewBridge` が実装）
+- TS 出力 `contract-types.ts` は `z.input` / `z.output` で契約から型を引く（JSON Schema から型を再構築しない）。`$defs` の型は `PartsSearchOutput["items"][number]` のような indexed access で導出
 
-**DTO クラス名の導出（`packages/gen/src/model.ts` に集約、スナップショットで固定）**
-- `$defs` のキー（`.meta({ id })`）はそのままクラス名
-- メソッドの input / output が無名 object → `<Namespace><Method>Request` / `<Namespace><Method>Response`（`master-data.getAddress` → `MasterDataGetAddressRequest`）
-- イベント payload が無名 object → `<Event>Event`
-- 無名 object の中の object プロパティ → `<親クラス><Prop>`、配列要素の object → `<親クラス><Prop>Item`
-- string enum は VB では `String` のまま往復し、同じ規則の名前で `Public Const` を並べた `NotInheritable Class` を生成する（`All` 配列付き）
-- プロパティは PascalCase + `<JsonProperty("camelCase")>`。VB 予約語は `[Date]` のように角括弧で逃がす。大文字小文字だけが違う名前、クラス名と同じ名前はエラー
+**VB ランタイム（Contract）**
+- Newtonsoft は `DateParseHandling.None` で使う。`"2026-01-05T09:00:00Z"` を Date に変換せず文字列のまま往復させる（`JObject.Parse` は変換してしまうので、ブリッジ内では必ず `JsonRpc.ParseToken` を使う）
+- `params` 省略時は `{}` として扱う。デシリアライズ失敗は -32602、未登録メソッドは -32601、未処理例外は -32000（`data` に例外型名）。実装から任意コードを返したいときは `JsonRpcException(code, message, data)` を投げる
+- id の無い要求（通知）は処理だけ行い応答しない（`HandleAsync` が Nothing を返す）
 
-**VB 生成物の形**
-- `Namespace` ブロックは書かず、プロジェクトの RootNamespace（`Wvbridge.Contract`）に入れる
-- `Dispatcher.Generated.vb` は namespace ごとに `Public Sub Register(api As IPartsApi)` を生成し、中で `RegisterHandler("parts.search", Async Function(params) ...)` を登録する。手書き側 `Runtime/Dispatcher.vb` が `RegisterHandler` / `DeserializeParams(Of T)` / `HandleAsync` を持つ
-- イベント発行ヘルパのクラス名は `BridgeEvents`（HANDOFF §7.2 の `PartsEvents` は例示。イベントは namespace を持たないため 1 クラス）。発行先は `IEventSink.Emit(method, payload)`。実体は Host の `WebViewBridge`
-- 生成ファイルは先頭に `<auto-generated />` マーカーを持つ。CLI はこのマーカーがあるファイルだけを上書き・削除する（手書きファイルには触らない）。`pnpm gen --check` で差分があれば exit 1（CI 用）
+**フロント側ランタイム（client）**
+- `Transport.on` の第 1 引数は `"event.progress"` のような完全名。`createClient(...).events.on("progress", ...)` が接頭辞を付ける
+- `MemoryTransport` はハンドラの第 2 引数に `{ emit }` を渡す（モック内から progress を発火できる）。要求・応答・イベントは JSON に一度直列化して往復させ、wire 上の挙動（undefined の欠落等）を再現する
+- transport の選択は `selectTransport({ mode: import.meta.env.VITE_TRANSPORT, factories: {...} })`。ライブラリ側は `import.meta.env` を読まない。`msw` / `http` は factories にキーを足す
+- `WebView2Transport` は `PostWebMessageAsString` で文字列が来ても JSON として解釈する。既定タイムアウト 30s。`dispose()` で待機中の要求を reject
 
-**VB ランタイム**
-- シリアライザは `DateParseHandling.None`（Newtonsoft が ISO 文字列を勝手に DateTime にしないように）
-- `InvalidParamsException`（Contract）は -32602 に変換される。Impl 側からも投げてよい。その他の例外は -32000、`message` に例外メッセージ、`data` に例外型名
-- `Dispatcher.HandleAsync` は例外を投げない（必ずエラー応答 JSON を返す）。要求 id は文字列・数値どちらでもそのまま返す
-- `WebViewBridge.Attach()` は `EnsureCoreWebView2Async` の後に呼ぶ。`Emit` は別スレッドから呼ばれても `Control.BeginInvoke` で UI スレッドに戻して `PostWebMessageAsJson` する
-- Contract のテストは `dotnet/Wvbridge.Contract.Tests`（MSTest、**net8.0**）。製品コードは 4.8 のままで、テストランナーだけモダン .NET を使う（Mac / Linux で `dotnet test` できるようにするため）。会社 PC で .NET 8 SDK が無い場合は sln から外すか slnf で除外する
-
-**フロント側**
-- `Transport.on(event)` はイベントの短い名前（`progress`）を受ける。ワイヤ上の `event.` 接頭辞は Transport 内で付け外しする
-- Transport の選択ロジックは `apps/web/src/bridge.ts` に置く（client パッケージは `hasWebView2()` だけ提供）。`chrome.webview` があれば WebView2、なければ `VITE_TRANSPORT`（既定 `memory`）
-- `createClient` は入力を zod で parse した結果（default / transform 適用後）を送る。出力・イベントも受信後に parse する。イベントの契約違反は既定で `console.warn`（`onEventValidationError` で差し替え可）
-- `MemoryTransport` のハンドラは `(input, ctx)` を受け、`ctx.emit("progress", ...)` で Host 側イベントを擬似発火できる。ハンドラの例外は VB 側と同じく -32000 の `BridgeError` になる
-- Vite の `base` は `./`（`https://app.local/index.html` の仮想ホストでも配下パスでも動くように）
-- `createClient` は namespace 名 `events` / `transport` を予約する
-
-**開発環境**
-- Mac / Linux で `Wvbridge.Host`（WinForms）までビルドするには **Microsoft ビルドの .NET SDK** が必要（`Microsoft.NET.Sdk.WindowsDesktop` を含む）。Ubuntu のディストリ版 `dotnet-sdk-8.0` には含まれないため、この作業では packages.microsoft.com の deb を展開して `sdk/8.0.424` を並置した。Mac の公式インストーラ版なら追加作業は不要のはず。`Directory.Build.props` で Windows 以外のとき `EnableWindowsTargeting=true` を付けている
+**Host**
+- 環境変数名は `WEBVIEW2_BRIDGE_DEV_URL`（Debug ビルドのみ有効）
+- WebView2 のユーザーデータは `%LOCALAPPDATA%\WebView2Bridge.Host`（exe 隣に書けない配置を想定）
+- `apps/web/dist` が存在すれば Host のビルド後に `$(OutDir)wwwroot` へコピーする MSBuild ターゲット `CopyWebDist`（無ければスキップ）。Vite は `base: "./"`
+- Host → Web の送信は `WebViewBridge.Post` で UI スレッドへマーシャリングする（`BeginInvoke`）。Impl のどのスレッドから `BridgeEvents.Progress` を呼んでもよい
 
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 
 ```markdown
-# wvbridge
+# webview2-bridge
 先に HANDOFF.md を読む。設計判断は HANDOFF.md §2 の狙いに従う。
 
 ## ルール
@@ -293,19 +292,19 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 
 ## コマンド
 - `pnpm install` / `pnpm gen` / `pnpm -r test` / `pnpm --filter web dev`
-- `dotnet build dotnet/Wvbridge.Contract` （Mac でも通ること）
-- `dotnet build dotnet/Wvbridge.sln` （Windows）
+- `dotnet build dotnet/WebView2Bridge.Contract` （Mac でも通ること）
+- `dotnet build dotnet/WebView2Bridge.sln` （Windows）
 ```
 
 ## 12. フェーズ計画と完了条件
 
 ### Phase 0 — 足場
 - pnpm workspace、`dotnet/` の 3 プロジェクト + sln、Directory.Build.props、`.gitignore`、CLAUDE.md
-- 完了条件: `pnpm install` が通り、`dotnet build dotnet/Wvbridge.Contract` が Mac で通る（中身は空でよい）
+- 完了条件: `pnpm install` が通り、`dotnet build dotnet/WebView2Bridge.Contract` が Mac で通る（中身は空でよい）
 
 ### Phase 1 — 契約とジェネレータ
 - `defineContract`、`contract.ts`（§6 の 1 メソッド + 1 イベント）、`to-schema`、`emit-ts`、`emit-vb`
-- 完了条件: `pnpm gen` で TS/VB が生成され、Vitest スナップショットが通り、生成された VB を含む `Wvbridge.Contract` が `Option Strict On` でビルドできる
+- 完了条件: `pnpm gen` で TS/VB が生成され、Vitest スナップショットが通り、生成された VB を含む `WebView2Bridge.Contract` が `Option Strict On` でビルドできる
 
 ### Phase 2 — フロント側ランタイムと Vite アプリ
 - `packages/client` の Transport / createClient / MemoryTransport / WebView2Transport
@@ -313,13 +312,13 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - 完了条件: ブラウザで `pnpm --filter web dev` を開き、MemoryTransport でモックの往復とイベント表示が動く。client の単体テストが通る
 
 ### Phase 3 — VB ランタイムとホスト（Windows で検証）
-- `Dispatcher`（手書き側）、`Wvbridge.Impl` のスタブ実装、`Wvbridge.Host` の `WebViewBridge` と `MainForm`
+- `Dispatcher`（手書き側）、`WebView2Bridge.Impl` のスタブ実装、`WebView2Bridge.Host` の `WebViewBridge` と `MainForm`
 - dist → wwwroot コピー
-- 完了条件（Windows）: `WVBRIDGE_DEV_URL=http://localhost:5173` でホストを起動し、WebView2 内で Phase 2 の UI が VB スタブと往復する。環境変数なしで起動すると `app.local` から `dist` が読まれて同じ動作をする。F12 で DevTools が開く
+- 完了条件（Windows）: `WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` でホストを起動し、WebView2 内で Phase 2 の UI が VB スタブと往復する。環境変数なしで起動すると `app.local` から `dist` が読まれて同じ動作をする。F12 で DevTools が開く
 
 ### Phase 4 — 切り出し（後回し）
 - `packages/gen` と `packages/client` を npm 公開できる形に整える
-- `Wvbridge.Contract` のランタイム部分を NuGet にするかは 2 つ目のアプリで判断
+- `WebView2Bridge.Contract` のランタイム部分を NuGet にするかは 2 つ目のアプリで判断
 
 Mac で Claude Code を回す場合、Phase 0〜2 と Phase 3 のコード作成までは Mac で完結し、Phase 3 の実行確認だけ Windows で行う。Windows での確認結果（ビルドエラー、実行時エラー）はそのまま Claude Code に貼って修正させる。
 
@@ -336,21 +335,25 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 
 | Phase | 状態 | 確認したこと |
 |---|---|---|
-| 0 足場 | 完了 | `pnpm install`、`dotnet build dotnet/Wvbridge.Contract`、`dotnet build dotnet/Wvbridge.sln`（Linux） |
-| 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen --check`、Vitest 16 件（スナップショット含む）、生成 VB を含む Contract のビルド、網羅用契約（enum / nullable / ネスト / 複数 namespace）の VB もコンパイル確認 |
-| 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest 18 件、`pnpm typecheck`、`pnpm build:web`、dev サーバーを Chromium（Playwright）で開き MemoryTransport で検索結果・progress イベント・契約違反・ホストエラー表示を確認 |
-| 3 VB ランタイムとホスト | **コード作成とビルドまで完了。Windows での実行確認が残件** | `dotnet build dotnet/Wvbridge.sln`（Linux、Host 含む）、dist → `bin/Debug/net48/wwwroot` コピー、`dotnet test dotnet/Wvbridge.Contract.Tests` 15 件 |
-| 4 切り出し | 未着手（後回し） | — |
+| 0 足場 | 完了 | `pnpm install`、`dotnet build dotnet/WebView2Bridge.Contract`、`dotnet build dotnet/WebView2Bridge.sln`（Mac / Linux でビルドのみ） |
+| 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen:check`、Vitest（gen 18 件、スナップショット含む）、生成 VB を含む Contract のビルド |
+| 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest（client 19 件）、`pnpm typecheck`、`pnpm --filter web build`、dev サーバーをヘッドレス Chromium で開き MemoryTransport で検索結果・progress イベント・入力検証エラー・-32000 エラーの表示を確認 |
+| 3 VB ランタイムとホスト | **コード作成とビルドまで完了。Windows での実行確認が残件** | `dotnet build dotnet/WebView2Bridge.sln`（Host 含む）、`apps/web/dist` → `bin/Debug/net48/wwwroot` コピー、`dotnet test dotnet/WebView2Bridge.Contract.Tests` 16 件 |
+| 4 切り出し | 未着手（後回し） | npm パッケージ名（`@ishibashi0112/webview2-bridge-gen` / `-client`）と `files` 指定までは済んでいる |
+
+### 経緯
+- 2026-09-05 に Mac ローカルの Claude Code で Phase 0〜3 のコードを作成（この版）。同日、別セッション（Claude Code on the web）でも HANDOFF.md だけの状態から同じ Phase 0〜3 を `wvbridge` 名で実装して main に入れたが、Mac 版のほうが完成度が高い（optional プロパティの `NullValueHandling.Ignore`、`Namespace Global.`、record / unknown 対応、VS デザイナ対応、LocalAppData のユーザーデータ等）ため **Mac 版を main に採用**した。wvbridge 版はブランチ `claude/progress-and-remaining-tasks-kv24ls` の履歴に残っている（参照用。今後は使わない）
+- 名前は `webview2-bridge` / `WebView2Bridge.*` で確定（§10 参照）
 
 ### Windows で行う残件（Phase 3 の完了条件）
-
-1. `pnpm install && pnpm gen && pnpm build:web`
-2. `dotnet build dotnet/Wvbridge.sln`（WebView2 Runtime が入っていること）
-3. dev 接続の確認: 別ターミナルで `pnpm dev:web` を起動し、`set WVBRIDGE_DEV_URL=http://localhost:5173`（PowerShell は `$env:WVBRIDGE_DEV_URL="http://localhost:5173"`）を設定して `dotnet/Wvbridge.Host/bin/Debug/net48/Wvbridge.Host.exe` を起動。バッジが `webview2` になり、検索で VB スタブ（`Wvbridge.Impl/PartsApi.vb`）の結果と progress が表示されること。`error` で検索すると -32000 が表示されること
+1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`
+2. `dotnet build dotnet/WebView2Bridge.sln`（WebView2 Runtime が入っていること。`dotnet/global.json` は .NET 8 以上の SDK を要求する）
+3. dev 接続の確認: 別ターミナルで `pnpm --filter web dev` を起動し、`set WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173`（PowerShell は `$env:WEBVIEW2_BRIDGE_DEV_URL="http://localhost:5173"`）を設定して `dotnet run --project dotnet/WebView2Bridge.Host`（または `dotnet/WebView2Bridge.Host/bin/Debug/net48/WebView2Bridge.Host.exe`）を起動。バッジが `transport: webview2` になり、検索で VB スタブ（`WebView2Bridge.Impl/PartsApi.vb`）の結果と progress が表示されること。keyword を `error` にすると -32000 が表示されること
 4. 配布形態の確認: 環境変数なしで起動し、`https://app.local/index.html` から `wwwroot` の dist が読まれて同じ動作をすること
 5. F12 で DevTools が開くこと
 6. 問題が出たらエラーをそのまま Claude Code に貼って修正する（`MainForm.vb` / `WebViewBridge.vb` が疑わしい箇所の中心）
 
 ### 既知の注意点
-- `Wvbridge.Contract.Tests` は net8.0。VS 2022 17.8 以降なら .NET 8 SDK が同梱されている。無ければ sln から一時的に外す
-- `Wvbridge.Host` の `CopyWebDist` ターゲットは `apps/web/dist/index.html` があるときだけ動く。dist が無いとビルド時にメッセージを出すだけで失敗はしない
+- `WebView2Bridge.Contract.Tests` は net8.0。VS 2022 17.8 以降なら .NET 8 SDK が同梱されている。無ければ sln から一時的に外す
+- `package.json` の `packageManager` は pnpm 11 系。Corepack が有効なら初回にダウンロード確認が出る（Enter で続行）
+- Linux（Ubuntu ディストリ版の .NET SDK）で Host までビルドするには Microsoft ビルドの SDK（`Microsoft.NET.Sdk.WindowsDesktop` 同梱）が別途必要。Mac の公式インストーラ版と Windows は不要

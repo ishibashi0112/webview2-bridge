@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** WebView2 の外で使う Transport。`memory`（既定）。将来 `msw` / `http` を足す */
+  /** transport の明示指定: "memory" | "webview2"。未指定なら自動（WebView2 内なら webview2、それ以外は memory） */
   readonly VITE_TRANSPORT?: string;
 }

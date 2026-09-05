@@ -1,19 +1,8 @@
-export { defineContract, type ContractShape, type MethodDef } from "./define.js";
-export { contractToJsonSchema, CONTRACT_SCHEMA_TITLE } from "./to-schema.js";
-export type { ContractSchemaDocument, JsonSchema } from "./schema-types.js";
-export {
-  buildContractModel,
-  ContractModelError,
-  EVENT_METHOD_PREFIX,
-  type ContractModel,
-  type DtoClassModel,
-  type EnumClassModel,
-  type EventModel,
-  type MethodModel,
-  type NamespaceModel,
-  type PropertyModel,
-  type TypeRef,
-} from "./model.js";
+// 契約モジュール（contract.ts）とブラウザ側から import される可能性があるため、
+// ここからは Node 固有 API（fs 等）に依存するものを export しない。generate / cli は別 entry。
+export { defineContract, type ContractDef, type MethodDef, type NamespaceDef } from "./define.js";
+export { toSchema } from "./to-schema.js";
 export { emitTs, type EmitTsOptions } from "./emit-ts.js";
-export { emitVb, vbTypeName, type EmitVbOptions } from "./emit-vb.js";
-export { GENERATED_MARKER } from "./header.js";
+export { emitVb, type EmitVbOptions } from "./emit-vb.js";
+export type { EmittedFile } from "./emitted.js";
+export { GenerateError, type ContractSchema, type JsonSchema, type MethodSchema } from "./schema.js";

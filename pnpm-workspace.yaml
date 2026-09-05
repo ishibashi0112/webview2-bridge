@@ -1,4 +1,8 @@
 packages:
-  - contract
   - packages/*
   - apps/*
+  - contract
+
+# esbuild(tsx/vite) のインストール後スクリプトを許可する
+allowBuilds:
+  esbuild: true

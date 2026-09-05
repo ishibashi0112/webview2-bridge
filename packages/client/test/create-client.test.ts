@@ -1,93 +1,63 @@
 import { describe, expect, it, vi } from "vitest";
-import { createClient } from "../src/create-client.js";
-import { BridgeError, BridgeValidationError } from "../src/errors.js";
-import { MemoryTransport, type MemoryHandlers } from "../src/memory.js";
-import type { Transport } from "../src/transport.js";
-import { samplePart, testContract } from "./fixtures.js";
+import { BridgeValidationError, MemoryTransport, createClient, type MemoryHandlers, type Transport } from "../src/index.js";
+import { contract, parts, type Contract } from "./fixtures.js";
 
-const handlers: MemoryHandlers<typeof testContract> = {
+const handlers: MemoryHandlers<Contract> = {
   parts: {
-    search: async (input, ctx) => {
-      ctx.emit("progress", { percent: 100 });
-      return { items: input.keyword === "none" ? [] : [samplePart] };
-    },
-    fail: async () => {
-      throw new Error("boom");
-    },
+    search: (input) => ({ items: parts.filter((p) => p.name.includes(input.keyword)) }),
   },
 };
 
 describe("createClient", () => {
-  it("exposes client.<namespace>.<method>() and returns validated output", async () => {
-    const client = createClient(testContract, new MemoryTransport(handlers));
-    const res = await client.parts.search({ keyword: "bolt" });
-    expect(res.items[0]?.partNo).toBe("P-001");
-    // 型: res.items は Part[]（コンパイル時チェック）
-    const qty: number = res.items[0]?.qty ?? 0;
-    expect(qty).toBe(10);
+  it("exposes namespace.method functions with typed results", async () => {
+    const client = createClient(contract, new MemoryTransport<Contract>(handlers));
+    const r = await client.parts.search({ keyword: "M6" });
+    expect(r.items.map((i) => i.partNo)).toEqual(["A-001", "A-002"]);
+    // 型チェック: r.items[0].qty は number
+    const qty: number | undefined = r.items[0]?.qty;
+    expect(qty).toBe(120);
   });
 
-  it("rejects invalid input before sending (BridgeValidationError input)", async () => {
-    const transport = new MemoryTransport(handlers);
-    const spy = vi.spyOn(transport, "call");
-    const client = createClient(testContract, transport);
-    const err = await client.parts.search({ keyword: "" }).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(BridgeValidationError);
-    expect(err).toMatchObject({ direction: "input", target: "parts.search" });
-    expect(spy).not.toHaveBeenCalled();
+  it("validates input before sending", async () => {
+    const call = vi.fn();
+    const transport: Transport = { call, on: () => () => {} };
+    const client = createClient(contract, transport);
+    await expect(client.parts.search({ keyword: "" })).rejects.toMatchObject({
+      name: "BridgeValidationError",
+      direction: "input",
+      method: "parts.search",
+    });
+    expect(call).not.toHaveBeenCalled();
   });
 
-  it("sends the parsed input (not the raw object) to the transport", async () => {
-    const calls: unknown[] = [];
-    const transport: Transport = {
-      call: async (method, params) => {
-        calls.push([method, params]);
-        return { items: [] };
-      },
-      on: () => () => {},
-    };
-    const client = createClient(testContract, transport);
-    await client.parts.search({ keyword: "x" });
-    expect(calls).toEqual([["parts.search", { keyword: "x" }]]);
-  });
-
-  it("rejects output that does not match the contract (BridgeValidationError output)", async () => {
-    const transport: Transport = {
-      call: async () => ({ items: [{ partNo: 1 }] }),
-      on: () => () => {},
-    };
-    const client = createClient(testContract, transport);
+  it("validates output after receiving", async () => {
+    const transport: Transport = { call: async () => ({ items: [{ partNo: 1 }] }), on: () => () => {} };
+    const client = createClient(contract, transport);
     const err = await client.parts.search({ keyword: "x" }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BridgeValidationError);
-    expect(err).toMatchObject({ direction: "output", target: "parts.search" });
+    expect((err as BridgeValidationError).direction).toBe("output");
+    expect((err as BridgeValidationError).issues.length).toBeGreaterThan(0);
   });
 
-  it("passes BridgeError from the transport through", async () => {
-    const client = createClient(testContract, new MemoryTransport(handlers));
-    await expect(client.parts.fail({})).rejects.toBeInstanceOf(BridgeError);
-  });
-
-  it("delivers validated events and reports invalid payloads via onEventValidationError", async () => {
-    const transport = new MemoryTransport(handlers);
-    const invalid: BridgeValidationError[] = [];
-    const client = createClient(testContract, transport, { onEventValidationError: (e) => invalid.push(e) });
-    const seen: number[] = [];
-    const off = client.events.on("progress", (p) => seen.push(p.percent));
-    await client.parts.search({ keyword: "x" });
-    transport.emit("progress", { percent: "bad" as unknown as number });
-    expect(seen).toEqual([100]);
-    expect(invalid).toHaveLength(1);
-    expect(invalid[0]).toMatchObject({ direction: "event", target: "progress" });
+  it("subscribes to events with validation and unsubscribe", () => {
+    const t = new MemoryTransport<Contract>(handlers);
+    const onEventValidationError = vi.fn();
+    const client = createClient(contract, t, { onEventValidationError });
+    const seen: unknown[] = [];
+    const off = client.events.on("progress", (p) => seen.push(p));
+    t.emit("progress", { percent: 10, message: "a" });
+    // 不正なペイロード（型を無視して流す）
+    t.emit("progress", { percent: "bad" } as never);
+    expect(seen).toEqual([{ percent: 10, message: "a" }]);
+    expect(onEventValidationError).toHaveBeenCalledTimes(1);
+    expect(onEventValidationError.mock.calls[0]![0]).toMatchObject({ direction: "event", method: "event.progress" });
     off();
-    transport.emit("progress", { percent: 1 });
-    expect(seen).toEqual([100]);
+    t.emit("progress", { percent: 20 });
+    expect(seen).toHaveLength(1);
   });
 
-  it("throws on unknown event names and reserved namespaces", () => {
-    const client = createClient(testContract, new MemoryTransport(handlers));
-    expect(() => client.events.on("nope" as never, () => {})).toThrow(/unknown event/);
-    expect(() =>
-      createClient({ methods: { events: {} }, events: {} }, new MemoryTransport({ events: {} })),
-    ).toThrow(/reserved/);
+  it("rejects reserved namespace names", () => {
+    const bad = { methods: { events: {} }, events: {} };
+    expect(() => createClient(bad, new MemoryTransport(handlers as never))).toThrow(/reserved/);
   });
 });

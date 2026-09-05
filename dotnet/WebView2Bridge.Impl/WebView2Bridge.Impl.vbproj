@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- net48 / VB。人間が書く実装（IXxxApi の実装、DB・サーバーアクセス） -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>WebView2Bridge.Impl</RootNamespace>
+    <AssemblyName>WebView2Bridge.Impl</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WebView2Bridge.Contract\WebView2Bridge.Contract.vbproj" />
+  </ItemGroup>
+</Project>

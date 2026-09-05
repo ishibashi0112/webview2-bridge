@@ -1,18 +1,13 @@
 import { z } from "zod";
-import { defineContract } from "@wvbridge/gen";
+import { defineContract } from "@ishibashi0112/webview2-bridge-gen";
 
-/**
- * 契約定義（唯一の正）。
- * - `.meta({ id: "Part" })` を付けた object は VB 側でその名前のクラスになる（複数箇所で共有される）
- * - 名前を付けない object は `<Namespace><Method>Request/Response` などの経路名になる
- * - 日付は ISO 8601 文字列で往復する（HANDOFF.md §10）
- */
-export const Part = z
+// 共有 DTO は .meta({ id }) で名前を付ける。ジェネレータはこの id を VB クラス名 / TS 型名に使う
+const Part = z
   .object({
     partNo: z.string(),
     name: z.string(),
     qty: z.number().int(),
-    updatedAt: z.string(), // ISO 8601
+    updatedAt: z.string().describe("ISO 8601。日付は初期は文字列で往復する（HANDOFF.md §10）"),
   })
   .meta({ id: "Part" });
 

@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  // 相対パスにしておくと https://app.local/index.html（仮想ホスト）でも配下のパスでも動く
+  // 仮想ホスト（https://app.local/index.html）や exe 隣のフォルダから読むため、相対パスで出力する
   base: "./",
   server: {
     port: 5173,
@@ -12,7 +12,6 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    target: "es2022",
     sourcemap: true,
   },
 });

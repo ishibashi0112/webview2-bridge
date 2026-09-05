@@ -1,8 +1,12 @@
-import type { ContractShape } from "@wvbridge/gen";
 import type { z } from "zod";
-import { BridgeValidationError } from "./errors.js";
-import type { Transport } from "./transport.js";
+import {
+  BridgeValidationError,
+  eventMethod,
+  type ContractShape,
+  type Transport,
+} from "./transport.js";
 
+/** `client.parts.search(input)` の形。namespace → method → 型付き関数 */
 export type ClientMethods<C extends ContractShape> = {
   [NS in keyof C["methods"]]: {
     [M in keyof C["methods"][NS]]: (
@@ -12,19 +16,23 @@ export type ClientMethods<C extends ContractShape> = {
 };
 
 export interface ClientEvents<C extends ContractShape> {
-  /** イベントを購読する。payload は契約で検証済み。戻り値は解除関数 */
-  on<E extends keyof C["events"] & string>(event: E, handler: (params: z.output<C["events"][E]>) => void): () => void;
+  /** イベントを購読する。戻り値は購読解除関数 */
+  on<E extends keyof C["events"] & string>(
+    name: E,
+    handler: (payload: z.output<C["events"][E]>) => void,
+  ): () => void;
 }
 
 export type Client<C extends ContractShape> = ClientMethods<C> & {
-  readonly events: ClientEvents<C>;
-  readonly transport: Transport;
+  events: ClientEvents<C>;
+  /** 生の transport（デバッグ・破棄用） */
+  transport: Transport;
 };
 
 export interface CreateClientOptions {
   /**
-   * 受信したイベント payload が契約に合わなかったときの処理。既定は console.warn。
-   * （メソッドの入出力の不一致は Promise の reject として呼び出し側に返る）
+   * 受信したイベントが契約に合わなかったときの処理。
+   * 既定は console.error に出してハンドラを呼ばない。
    */
   onEventValidationError?: (error: BridgeValidationError) => void;
 }
@@ -32,10 +40,10 @@ export interface CreateClientOptions {
 const RESERVED_NAMESPACES = new Set(["events", "transport"]);
 
 /**
- * 契約と Transport から型付きクライアントを作る。
- *   client.parts.search({ keyword: "x" })  → Promise<{ items: Part[] }>
- *   client.events.on("progress", p => ...) → 解除関数
- * 入力は送信前に zod で検証し、出力は受信後に検証する。失敗時は BridgeValidationError。
+ * 契約と transport から型付きクライアントを作る。
+ * - 入力は送信前に zod で parse（失敗: BridgeValidationError, direction "input"）
+ * - 出力は受信後に zod で parse（失敗: BridgeValidationError, direction "output"）
+ * - イベントは受信後に zod で parse（失敗: onEventValidationError）
  */
 export function createClient<C extends ContractShape>(
   contract: C,
@@ -46,42 +54,46 @@ export function createClient<C extends ContractShape>(
 
   for (const [ns, methods] of Object.entries(contract.methods)) {
     if (RESERVED_NAMESPACES.has(ns)) {
-      throw new Error(`namespace "${ns}" is reserved by createClient; rename it in the contract`);
+      throw new Error(`Namespace "${ns}" is reserved on the client object`);
     }
-    const nsObj: Record<string, (input: unknown) => Promise<unknown>> = {};
+    const nsObj: Record<string, unknown> = {};
     for (const [name, def] of Object.entries(methods)) {
-      const method = `${ns}.${name}`;
-      nsObj[name] = async (input: unknown) => {
-        const parsedIn = def.input.safeParse(input);
-        if (!parsedIn.success) throw new BridgeValidationError("input", method, parsedIn.error.issues);
-        const raw = await transport.call(method, parsedIn.data);
-        const parsedOut = def.output.safeParse(raw);
-        if (!parsedOut.success) throw new BridgeValidationError("output", method, parsedOut.error.issues);
-        return parsedOut.data;
+      const rpc = `${ns}.${name}`;
+      nsObj[name] = async (input: unknown): Promise<unknown> => {
+        const parsedInput = def.input.safeParse(input);
+        if (!parsedInput.success) throw new BridgeValidationError("input", rpc, parsedInput.error, input);
+        const raw = await transport.call(rpc, parsedInput.data);
+        const parsedOutput = def.output.safeParse(raw);
+        if (!parsedOutput.success) throw new BridgeValidationError("output", rpc, parsedOutput.error, raw);
+        return parsedOutput.data;
       };
     }
     client[ns] = nsObj;
   }
 
   const onEventValidationError =
-    options.onEventValidationError ?? ((err: BridgeValidationError) => console.warn(`[wvbridge] ${err.message}`));
+    options.onEventValidationError ??
+    ((e: BridgeValidationError): void => {
+      console.error("[webview2-bridge]", e.message, e.issues);
+    });
 
   const events: ClientEvents<C> = {
-    on(event, handler) {
-      const schema = contract.events[event];
-      if (!schema) throw new Error(`unknown event "${event}" (not in contract.events)`);
-      return transport.on(event, (raw) => {
+    on(name, handler) {
+      const schema = contract.events[name];
+      if (!schema) throw new Error(`Unknown event "${name}"`);
+      const rpc = eventMethod(name);
+      return transport.on(rpc, (raw) => {
         const parsed = schema.safeParse(raw);
         if (!parsed.success) {
-          onEventValidationError(new BridgeValidationError("event", event, parsed.error.issues));
+          onEventValidationError(new BridgeValidationError("event", rpc, parsed.error, raw));
           return;
         }
-        handler(parsed.data as z.output<C["events"][typeof event]>);
+        handler(parsed.data as z.output<C["events"][typeof name]>);
       });
     },
   };
 
-  Object.defineProperty(client, "events", { value: events, enumerable: false });
-  Object.defineProperty(client, "transport", { value: transport, enumerable: false });
+  client["events"] = events;
+  client["transport"] = transport;
   return client as Client<C>;
 }

@@ -1,106 +1,110 @@
-import { BridgeError, BridgeTimeoutError } from "./errors.js";
 import {
-  EventListeners,
-  eventNameFromMethod,
-  isJsonRpcErrorResponse,
+  BridgeDisposedError,
+  BridgeError,
+  BridgeTimeoutError,
   isJsonRpcNotification,
   isJsonRpcResponse,
+  ListenerMap,
   type JsonRpcRequest,
   type Transport,
 } from "./transport.js";
 
-/** `window.chrome.webview` のうち使う部分だけ。テストでは差し替える */
+/** `window.chrome.webview` のうち使う部分 */
 export interface WebView2Like {
   postMessage(message: unknown): void;
   addEventListener(type: "message", listener: (event: { data: unknown }) => void): void;
   removeEventListener(type: "message", listener: (event: { data: unknown }) => void): void;
 }
 
-export function getWebView2(): WebView2Like | undefined {
-  const g = globalThis as { chrome?: { webview?: WebView2Like } };
-  return g.chrome?.webview;
-}
-
-/** WebView2 の中で動いているか（Transport 選択に使う） */
-export function hasWebView2(): boolean {
-  return getWebView2() !== undefined;
-}
-
 export interface WebView2TransportOptions {
-  /** 既定は window.chrome.webview */
-  webview?: WebView2Like;
-  /** 応答待ちのタイムアウト（ms）。既定 30000。0 以下で無制限 */
+  /** 応答待ちの上限（既定 30000ms） */
   timeoutMs?: number;
-  /** 要求 id の接頭辞。既定はランダム（複数インスタンスでも id が衝突しないように） */
-  idPrefix?: string;
+  /** テスト用。省略時は window.chrome.webview */
+  webview?: WebView2Like;
+  /** 要求 id の生成。省略時は連番 + ランダム接頭辞 */
+  idGenerator?: () => string;
+}
+
+declare global {
+  interface Window {
+    chrome?: { webview?: WebView2Like };
+  }
+}
+
+export function getWebView2(): WebView2Like | undefined {
+  if (typeof window === "undefined") return undefined;
+  return window.chrome?.webview;
 }
 
 interface Pending {
   method: string;
-  resolve: (value: unknown) => void;
-  reject: (reason: unknown) => void;
-  timer: ReturnType<typeof setTimeout> | undefined;
+  resolve: (v: unknown) => void;
+  reject: (e: unknown) => void;
+  timer: ReturnType<typeof setTimeout>;
 }
 
-export const DEFAULT_TIMEOUT_MS = 30_000;
-
 /**
- * WebView2 の postMessage / WebMessageReceived を使う Transport。
- * Web → Host: `chrome.webview.postMessage(obj)`（Host は WebMessageAsJson で受ける）
- * Host → Web: `PostWebMessageAsJson(json)` → `message` イベントの `e.data`（既にオブジェクト）
+ * WebView2 の postMessage / message イベントに JSON-RPC を載せる transport。
+ * Web → Host はオブジェクトをそのまま postMessage（Host は WebMessageAsJson で受ける）。
+ * Host → Web は PostWebMessageAsJson（e.data がオブジェクト）を想定するが、
+ * PostWebMessageAsString で JSON 文字列が来た場合も解釈する。
  */
 export class WebView2Transport implements Transport {
+  static isAvailable(): boolean {
+    return getWebView2() !== undefined;
+  }
+
   private readonly webview: WebView2Like;
   private readonly timeoutMs: number;
-  private readonly idPrefix: string;
+  private readonly nextId: () => string;
   private readonly pending = new Map<string, Pending>();
-  private readonly listeners = new EventListeners();
-  private seq = 0;
+  private readonly listeners = new ListenerMap();
   private disposed = false;
 
   constructor(options: WebView2TransportOptions = {}) {
     const webview = options.webview ?? getWebView2();
     if (!webview) {
-      throw new Error("WebView2 is not available: window.chrome.webview is undefined (not running inside WebView2?)");
+      throw new Error("window.chrome.webview is not available (not running inside WebView2)");
     }
     this.webview = webview;
-    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-    this.idPrefix = options.idPrefix ?? Math.random().toString(36).slice(2, 8);
+    this.timeoutMs = options.timeoutMs ?? 30_000;
+    this.nextId = options.idGenerator ?? createIdGenerator();
     this.webview.addEventListener("message", this.onMessage);
   }
 
   call(method: string, params: unknown): Promise<unknown> {
-    if (this.disposed) return Promise.reject(new Error("WebView2Transport is disposed"));
-    const id = `${this.idPrefix}-${++this.seq}`;
+    if (this.disposed) return Promise.reject(new BridgeDisposedError(method));
+    const id = this.nextId();
+    const request: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
     return new Promise<unknown>((resolve, reject) => {
-      const timer =
-        this.timeoutMs > 0
-          ? setTimeout(() => {
-              this.pending.delete(id);
-              reject(new BridgeTimeoutError(method, this.timeoutMs));
-            }, this.timeoutMs)
-          : undefined;
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new BridgeTimeoutError(method, this.timeoutMs));
+      }, this.timeoutMs);
       this.pending.set(id, { method, resolve, reject, timer });
-      const request: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
       try {
         this.webview.postMessage(request);
-      } catch (err) {
-        this.settle(id)?.reject(err);
+      } catch (e) {
+        clearTimeout(timer);
+        this.pending.delete(id);
+        reject(e);
       }
     });
   }
 
-  on(event: string, handler: (params: unknown) => void): () => void {
-    return this.listeners.add(event, handler);
+  on(method: string, handler: (params: unknown) => void): () => void {
+    return this.listeners.add(method, handler);
   }
 
-  /** リスナを外し、待機中の呼び出しをすべて reject する */
+  /** message リスナを外し、待機中の要求をすべて reject する */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.webview.removeEventListener("message", this.onMessage);
-    for (const id of [...this.pending.keys()]) {
-      this.settle(id)?.reject(new Error("WebView2Transport is disposed"));
+    for (const [id, p] of this.pending) {
+      clearTimeout(p.timer);
+      p.reject(new BridgeDisposedError(p.method));
+      this.pending.delete(id);
     }
     this.listeners.clear();
   }
@@ -109,37 +113,38 @@ export class WebView2Transport implements Transport {
     return this.pending.size;
   }
 
-  private settle(id: string): Pending | undefined {
-    const p = this.pending.get(id);
-    if (!p) return undefined;
-    this.pending.delete(id);
-    if (p.timer !== undefined) clearTimeout(p.timer);
-    return p;
-  }
-
   private readonly onMessage = (event: { data: unknown }): void => {
-    let msg: unknown = event.data;
-    if (typeof msg === "string") {
+    let data = event.data;
+    if (typeof data === "string") {
       try {
-        msg = JSON.parse(msg);
+        data = JSON.parse(data) as unknown;
       } catch {
-        return; // このブリッジ宛てではないメッセージは無視
+        return; // このブリッジ宛てではない文字列メッセージ
       }
     }
-    if (isJsonRpcNotification(msg)) {
-      const name = eventNameFromMethod(msg.method);
-      if (name !== undefined) this.listeners.dispatch(name, msg.params);
+    if (isJsonRpcResponse(data)) {
+      if (data.id === null) {
+        // Parse error 等、要求と対応づけられないエラー。待機中の要求は残す（タイムアウトで落ちる）
+        console.error("[webview2-bridge] response without id", data);
+        return;
+      }
+      const p = this.pending.get(String(data.id));
+      if (!p) return;
+      this.pending.delete(String(data.id));
+      clearTimeout(p.timer);
+      if ("error" in data) p.reject(new BridgeError(data.error, p.method));
+      else p.resolve(data.result);
       return;
     }
-    if (isJsonRpcResponse(msg)) {
-      if (msg.id === null) return;
-      const p = this.settle(String(msg.id));
-      if (!p) return;
-      if (isJsonRpcErrorResponse(msg)) {
-        p.reject(new BridgeError(msg.error.code, msg.error.message, msg.error.data, p.method));
-      } else {
-        p.resolve(msg.result);
-      }
+    if (isJsonRpcNotification(data)) {
+      this.listeners.dispatch(data.method, data.params);
     }
   };
+}
+
+function createIdGenerator(): () => string {
+  // ページのリロード後も id が衝突しないよう、接頭辞にランダム値を付ける
+  const prefix = Math.random().toString(36).slice(2, 8);
+  let counter = 0;
+  return () => `${prefix}-${++counter}`;
 }

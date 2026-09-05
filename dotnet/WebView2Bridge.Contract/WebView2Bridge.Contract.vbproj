@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- netstandard2.0 / VB。生成 DTO・Interface・Dispatcher + JSON-RPC ランタイム。WebView2 には依存しない -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>WebView2Bridge.Contract</RootNamespace>
+    <AssemblyName>WebView2Bridge.Contract</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+</Project>

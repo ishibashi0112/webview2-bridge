@@ -1,40 +1,26 @@
 export {
-  EVENT_METHOD_PREFIX,
-  EventListeners,
+  BridgeDisposedError,
+  BridgeError,
+  BridgeTimeoutError,
+  BridgeValidationError,
+  EVENT_PREFIX,
+  JsonRpcErrorCodes,
   eventMethod,
-  eventNameFromMethod,
-  isJsonRpcErrorResponse,
   isJsonRpcNotification,
   isJsonRpcResponse,
-  JsonRpcErrorCodes,
+  type ContractShape,
   type JsonRpcErrorObject,
-  type JsonRpcErrorResponse,
+  type JsonRpcFailure,
   type JsonRpcId,
   type JsonRpcNotification,
   type JsonRpcRequest,
   type JsonRpcResponse,
-  type JsonRpcSuccessResponse,
+  type JsonRpcSuccess,
+  type MethodShape,
   type Transport,
+  type ValidationDirection,
 } from "./transport.js";
-export { BridgeError, BridgeTimeoutError, BridgeValidationError } from "./errors.js";
-export {
-  DEFAULT_TIMEOUT_MS,
-  getWebView2,
-  hasWebView2,
-  WebView2Transport,
-  type WebView2Like,
-  type WebView2TransportOptions,
-} from "./webview2.js";
-export {
-  MemoryTransport,
-  type MemoryHandlerContext,
-  type MemoryHandlers,
-  type MemoryTransportOptions,
-} from "./memory.js";
-export {
-  createClient,
-  type Client,
-  type ClientEvents,
-  type ClientMethods,
-  type CreateClientOptions,
-} from "./create-client.js";
+export { WebView2Transport, getWebView2, type WebView2Like, type WebView2TransportOptions } from "./webview2.js";
+export { MemoryTransport, type MemoryContext, type MemoryHandlers, type MemoryTransportOptions } from "./memory.js";
+export { createClient, type Client, type ClientEvents, type ClientMethods, type CreateClientOptions } from "./create-client.js";
+export { selectTransport, type SelectTransportOptions, type TransportFactory } from "./select-transport.js";

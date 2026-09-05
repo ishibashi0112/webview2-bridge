@@ -1,22 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { emitTs } from "../src/emit-ts.js";
-import { buildContractModel } from "../src/model.js";
-import { contractToJsonSchema } from "../src/to-schema.js";
-import { kitchenSinkContract } from "./fixtures/kitchen-sink-contract.js";
-import { sampleContract } from "./fixtures/sample-contract.js";
+import { emitTs, toSchema } from "../src/index.js";
+import { kitchenSinkContract, sampleContract } from "./fixtures.js";
+
+const opts = { contractImport: "@webview2-bridge/contract" };
 
 describe("emitTs", () => {
-  it("sample contract (snapshot)", async () => {
-    const files = emitTs(buildContractModel(contractToJsonSchema(sampleContract)));
-    expect(Object.keys(files)).toEqual(["contract-types.ts"]);
-    await expect(files["contract-types.ts"]).toMatchFileSnapshot("__snapshots__/sample/contract-types.ts");
+  it("sample contract", () => {
+    const files = emitTs(toSchema(sampleContract), opts);
+    expect(files.map((f) => f.path)).toEqual(["contract-types.ts"]);
+    expect(files[0]!.content).toMatchSnapshot();
   });
 
-  it("kitchen-sink contract (snapshot)", async () => {
-    const files = emitTs(buildContractModel(contractToJsonSchema(kitchenSinkContract)), {
-      contractImport: "./kitchen-sink-contract",
-      contractExport: "kitchenSinkContract",
-    });
-    await expect(files["contract-types.ts"]).toMatchFileSnapshot("__snapshots__/kitchen-sink/contract-types.ts");
+  it("kitchen sink contract", () => {
+    const files = emitTs(toSchema(kitchenSinkContract), opts);
+    expect(files[0]!.content).toMatchSnapshot();
+  });
+
+  it("derives named types through optional/nullable with NonNullable", () => {
+    const src = emitTs(toSchema(kitchenSinkContract), opts)[0]!.content;
+    expect(src).toContain('export type Customer = CustomersListOutput["items"][number];');
+    expect(src).toContain('export type Status = Customer["status"];');
+    expect(src).toContain('export type Address = NonNullable<Customer["address"]>;');
   });
 });

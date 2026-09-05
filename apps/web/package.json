@@ -1,17 +1,17 @@
 {
   "name": "web",
-  "version": "0.0.0",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@wvbridge/client": "workspace:*",
-    "@wvbridge/contract": "workspace:*",
+    "@ishibashi0112/webview2-bridge-client": "workspace:*",
+    "@webview2-bridge/contract": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "zod": "^4.5.4"
@@ -19,8 +19,8 @@
   "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.6"
+    "vite": "^8.2.2"
   }
 }

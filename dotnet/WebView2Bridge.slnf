@@ -1,0 +1,10 @@
+{
+  "solution": {
+    "path": "WebView2Bridge.sln",
+    "projects": [
+      "WebView2Bridge.Contract\\WebView2Bridge.Contract.vbproj",
+      "WebView2Bridge.Impl\\WebView2Bridge.Impl.vbproj",
+      "WebView2Bridge.Host\\WebView2Bridge.Host.vbproj"
+    ]
+  }
+}

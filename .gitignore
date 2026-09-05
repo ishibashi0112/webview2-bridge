@@ -1,22 +1,28 @@
-# Node
+# node
 node_modules/
 dist/
 *.tsbuildinfo
 .vite/
+.pnpm-store/
 
-# .NET
-dotnet/**/bin/
-dotnet/**/obj/
+# dotnet
+bin/
+obj/
 *.user
 *.suo
 .vs/
+dotnet/WebView2Bridge.Host/wwwroot/
 
-# Editors / OS
-.idea/
+# editors / os
 .DS_Store
-Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
 
-# Logs
+# logs
 *.log
 npm-debug.log*
 pnpm-debug.log*

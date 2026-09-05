@@ -1,25 +1,40 @@
-import { BridgeError, BridgeTimeoutError, BridgeValidationError } from "@wvbridge/client";
+import { BridgeError, BridgeValidationError } from "@ishibashi0112/webview2-bridge-client";
 import { useEffect, useState, type FormEvent } from "react";
-import { client, transportKind } from "./bridge";
-import type { PartsSearchOutput, ProgressEvent } from "./generated/contract-types";
+import { client, transportMode } from "./bridge";
+import type { Part, ProgressEvent } from "./generated/contract-types";
 
-type Part = PartsSearchOutput["items"][number];
+interface ErrorInfo {
+  kind: string;
+  message: string;
+  detail?: string | undefined;
+}
 
-function describeError(err: unknown): string {
-  if (err instanceof BridgeValidationError) return `契約違反 (${err.direction}): ${err.message}`;
-  if (err instanceof BridgeTimeoutError) return `タイムアウト: ${err.message}`;
-  if (err instanceof BridgeError) return `ホストエラー ${err.code}: ${err.message}${err.data ? ` (${String(err.data)})` : ""}`;
-  return err instanceof Error ? err.message : String(err);
+function describeError(e: unknown): ErrorInfo {
+  if (e instanceof BridgeValidationError) {
+    return { kind: `validation (${e.direction})`, message: e.message, detail: JSON.stringify(e.issues, null, 2) };
+  }
+  if (e instanceof BridgeError) {
+    return { kind: `${e.name} ${e.code}`, message: e.message, detail: e.data === undefined ? undefined : JSON.stringify(e.data) };
+  }
+  return { kind: "error", message: e instanceof Error ? e.message : String(e) };
 }
 
 export function App() {
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState("m6");
+  const [limit, setLimit] = useState("");
   const [items, setItems] = useState<Part[] | null>(null);
-  const [progress, setProgress] = useState<ProgressEvent | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ErrorInfo | null>(null);
+  const [progress, setProgress] = useState<ProgressEvent | null>(null);
+  const [log, setLog] = useState<string[]>([]);
 
-  useEffect(() => client.events.on("progress", setProgress), []);
+  // Host → Web イベント（event.progress）の購読。アンマウント時に解除
+  useEffect(() => {
+    return client.events.on("progress", (p) => {
+      setProgress(p);
+      setLog((prev) => [`${new Date().toLocaleTimeString()} progress ${p.percent}% ${p.message ?? ""}`, ...prev].slice(0, 20));
+    });
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,7 +42,10 @@ export function App() {
     setError(null);
     setProgress(null);
     try {
-      const res = await client.parts.search({ keyword });
+      const res = await client.parts.search({
+        keyword,
+        ...(limit.trim() !== "" && { limit: Number(limit) }),
+      });
       setItems(res.items);
     } catch (err) {
       setItems(null);
@@ -39,67 +57,70 @@ export function App() {
 
   return (
     <main className="app">
-      <header className="app__header">
-        <h1>wvbridge</h1>
-        <span className={`badge badge--${transportKind}`} title="使用中の Transport">
-          {transportKind}
-        </span>
+      <header>
+        <h1>webview2-bridge</h1>
+        <span className={`badge badge-${transportMode}`}>transport: {transportMode}</span>
       </header>
 
-      <form className="search" onSubmit={onSubmit}>
-        <input
-          className="search__input"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="部品番号または名称（空は契約違反、error はホストエラーの例）"
-          autoFocus
-        />
-        <button className="search__button" type="submit" disabled={busy}>
-          {busy ? "検索中…" : "検索"}
+      <form onSubmit={(e) => void onSubmit(e)} className="search">
+        <label>
+          keyword
+          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder='空にすると入力検証エラー、"error" でホスト例外' />
+        </label>
+        <label>
+          limit
+          <input value={limit} onChange={(e) => setLimit(e.target.value)} inputMode="numeric" style={{ width: "5em" }} />
+        </label>
+        <button type="submit" disabled={busy}>
+          {busy ? "検索中…" : "parts.search"}
         </button>
       </form>
 
-      <section className="status" aria-live="polite">
-        {progress && (
-          <div className="progress">
-            <progress max={100} value={progress.percent} />
-            <span>
-              {progress.percent}%{progress.message ? ` — ${progress.message}` : ""}
-            </span>
-          </div>
-        )}
-        {error && <p className="error">{error}</p>}
-      </section>
+      {progress && (
+        <div className="progress">
+          <progress value={progress.percent} max={100} /> {progress.percent}% {progress.message}
+        </div>
+      )}
+
+      {error && (
+        <div className="error">
+          <strong>{error.kind}</strong>: {error.message}
+          {error.detail && <pre>{error.detail}</pre>}
+        </div>
+      )}
 
       {items && (
-        <table className="results">
+        <table>
           <thead>
             <tr>
-              <th>部品番号</th>
-              <th>名称</th>
-              <th className="num">数量</th>
-              <th>更新日時</th>
+              <th>partNo</th>
+              <th>name</th>
+              <th>qty</th>
+              <th>updatedAt</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={4} className="empty">
-                  該当なし
-                </td>
+                <td colSpan={4}>該当なし</td>
               </tr>
             )}
             {items.map((p) => (
               <tr key={p.partNo}>
                 <td>{p.partNo}</td>
                 <td>{p.name}</td>
-                <td className="num">{p.qty.toLocaleString()}</td>
+                <td className="num">{p.qty}</td>
                 <td>{p.updatedAt}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
+      <section className="log">
+        <h2>events</h2>
+        {log.length === 0 ? <p className="muted">（まだ受信なし）</p> : <ul>{log.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+      </section>
     </main>
   );
 }

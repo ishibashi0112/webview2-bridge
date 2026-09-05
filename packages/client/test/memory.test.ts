@@ -1,60 +1,90 @@
 import { describe, expect, it, vi } from "vitest";
-import { BridgeError } from "../src/errors.js";
-import { MemoryTransport, type MemoryHandlers } from "../src/memory.js";
-import { samplePart, testContract } from "./fixtures.js";
+import { BridgeError, JsonRpcErrorCodes, MemoryTransport, type MemoryHandlers } from "../src/index.js";
+import { contract, parts, type Contract } from "./fixtures.js";
 
-function makeHandlers(): MemoryHandlers<typeof testContract> {
-  return {
+function make(overrides: Partial<MemoryHandlers<Contract>["parts"]> = {}, delay?: number) {
+  const handlers: MemoryHandlers<Contract> = {
     parts: {
       search: async (input, ctx) => {
-        ctx.emit("progress", { percent: 50, message: `searching ${input.keyword}` });
-        return { items: [samplePart].slice(0, input.limit ?? 10) };
+        ctx.emit("progress", { percent: 50 });
+        const items = parts.filter((p) => p.name.toLowerCase().includes(input.keyword.toLowerCase()));
+        return { items: items.slice(0, input.limit ?? items.length) };
       },
-      fail: async () => {
-        throw new Error("boom");
-      },
+      ...overrides,
     },
   };
+  return new MemoryTransport<Contract>(handlers, delay === undefined ? {} : { delay });
 }
 
 describe("MemoryTransport", () => {
-  it("calls the handler for <namespace>.<name>", async () => {
-    const t = new MemoryTransport(makeHandlers());
-    await expect(t.call("parts.search", { keyword: "bolt" })).resolves.toEqual({ items: [samplePart] });
+  it("round-trips a call through the handler", async () => {
+    const t = make();
+    const r = (await t.call("parts.search", { keyword: "m6" })) as { items: unknown[] };
+    expect(r.items).toHaveLength(2);
   });
 
   it("rejects unknown methods with -32601", async () => {
-    const t = new MemoryTransport(makeHandlers());
-    const err = await t.call("parts.nope", {}).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(BridgeError);
-    expect((err as BridgeError).code).toBe(-32601);
-    await expect(t.call("noDot", {})).rejects.toMatchObject({ code: -32601 });
+    const t = make();
+    await expect(t.call("parts.nope", {})).rejects.toMatchObject({
+      name: "BridgeError",
+      code: JsonRpcErrorCodes.MethodNotFound,
+    });
+    await expect(t.call("nodot", {})).rejects.toBeInstanceOf(BridgeError);
   });
 
-  it("converts handler exceptions to -32000 like the VB side", async () => {
-    const t = new MemoryTransport(makeHandlers());
-    const err = await t.call("parts.fail", {}).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(BridgeError);
-    expect(err).toMatchObject({ code: -32000, message: "boom", data: "Error", method: "parts.fail" });
+  it("converts handler exceptions to -32000 with the error name as data", async () => {
+    const t = make({
+      search: () => {
+        throw new RangeError("boom");
+      },
+    });
+    await expect(t.call("parts.search", { keyword: "x" })).rejects.toMatchObject({
+      code: JsonRpcErrorCodes.ServerError,
+      message: "boom",
+      data: "RangeError",
+    });
   });
 
-  it("dispatches events emitted from handlers and via emit(), and unsubscribes", async () => {
-    const t = new MemoryTransport(makeHandlers());
+  it("passes BridgeError thrown by handlers through unchanged", async () => {
+    const t = make({
+      search: () => {
+        throw new BridgeError({ code: -32001, message: "custom" });
+      },
+    });
+    await expect(t.call("parts.search", { keyword: "x" })).rejects.toMatchObject({ code: -32001, message: "custom" });
+  });
+
+  it("serializes through JSON (drops undefined, copies objects)", async () => {
+    const input = { keyword: "m6", limit: undefined };
+    let received: unknown;
+    const t = make({
+      search: (i) => {
+        received = i;
+        return { items: [] };
+      },
+    });
+    await t.call("parts.search", input);
+    expect(received).toEqual({ keyword: "m6" });
+    expect(Object.keys(received as object)).toEqual(["keyword"]);
+    expect(received).not.toBe(input);
+  });
+
+  it("dispatches emitted events to subscribers and supports unsubscribe", async () => {
+    const t = make();
     const seen: unknown[] = [];
-    const off = t.on("progress", (p) => seen.push(p));
-    await t.call("parts.search", { keyword: "x" });
-    t.emit("progress", { percent: 100 });
-    expect(seen).toEqual([{ percent: 50, message: "searching x" }, { percent: 100 }]);
+    const off = t.on("event.progress", (p) => seen.push(p));
+    await t.call("parts.search", { keyword: "bolt" });
+    expect(seen).toEqual([{ percent: 50 }]);
     off();
-    t.emit("progress", { percent: 0 });
-    expect(seen).toHaveLength(2);
+    t.emit("progress", { percent: 100 });
+    expect(seen).toHaveLength(1);
   });
 
-  it("applies the configured delay", async () => {
+  it("honours delay", async () => {
     vi.useFakeTimers();
     try {
-      const t = new MemoryTransport(makeHandlers(), { delay: 500 });
-      const p = t.call("parts.search", { keyword: "x" });
+      const t = make({}, 500);
+      const p = t.call("parts.search", { keyword: "bolt" });
       let done = false;
       void p.then(() => (done = true));
       await vi.advanceTimersByTimeAsync(499);

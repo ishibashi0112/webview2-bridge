@@ -1,21 +1,21 @@
 {
-  "name": "wvbridge",
+  "name": "webview2-bridge",
   "private": true,
   "version": "0.0.0",
-  "description": "WinForms(VB.NET 4.8) + WebView2 + Vite/React bridge foundation",
-  "packageManager": "pnpm@10.33.0",
+  "description": "WinForms (VB.NET 4.8) + WebView2 + Vite/React bridge: zod contract -> generated TS client / VB.NET DTO+Dispatcher",
+  "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22"
   },
   "scripts": {
-    "gen": "tsx packages/gen/src/cli.ts --contract contract/contract.ts --schema-out contract/contract.schema.json --ts-out apps/web/src/generated --vb-out dotnet/Wvbridge.Contract/Generated",
-    "test": "pnpm -r run test",
-    "typecheck": "pnpm -r run typecheck",
-    "build:web": "pnpm --filter web build",
-    "dev:web": "pnpm --filter web dev"
+    "gen": "tsx packages/gen/src/cli.ts",
+    "build": "pnpm -r --filter './packages/*' build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "gen:check": "tsx packages/gen/src/cli.ts --check"
   },
   "devDependencies": {
-    "tsx": "^4.23.13",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "tsx": "^4.23.13"
   }
 }

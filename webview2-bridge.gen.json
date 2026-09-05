@@ -1,0 +1,12 @@
+{
+  "contract": "contract/contract.ts",
+  "schemaOut": "contract/contract.schema.json",
+  "ts": {
+    "outDir": "apps/web/src/generated",
+    "contractImport": "@webview2-bridge/contract"
+  },
+  "vb": {
+    "outDir": "dotnet/WebView2Bridge.Contract/Generated",
+    "namespace": "WebView2Bridge.Contract"
+  }
+}
