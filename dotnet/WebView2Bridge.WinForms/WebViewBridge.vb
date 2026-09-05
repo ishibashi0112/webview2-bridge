@@ -5,7 +5,9 @@ Imports System.Diagnostics
 Imports System.Windows.Forms
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
-Imports WebView2Bridge.Contract
+Imports WebView2Bridge.Runtime
+
+Namespace Global.WebView2Bridge.WinForms
 
 ''' <summary>
 ''' WebView2 コントロールと Dispatcher をつなぐ。
@@ -94,3 +96,5 @@ Public NotInheritable Class WebViewBridge
         _core = Nothing
     End Sub
 End Class
+
+End Namespace

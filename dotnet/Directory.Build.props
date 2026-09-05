@@ -14,4 +14,22 @@
     <!-- Mac 上で net48 / WinForms をビルドするための設定。Windows では無視される -->
     <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
   </PropertyGroup>
+
+  <!--
+    NuGet パッケージ共通のメタデータ。公開するのは WebView2Bridge.Runtime と WebView2Bridge.WinForms のみ
+    （各 .vbproj で IsPackable=true）。バージョンはここ 1 か所で管理する（RELEASING.md）。
+  -->
+  <PropertyGroup>
+    <WebView2BridgeVersion>0.1.0</WebView2BridgeVersion>
+    <Version>$(WebView2BridgeVersion)</Version>
+    <IsPackable>false</IsPackable>
+    <Authors>ishibashi0112</Authors>
+    <Copyright>Copyright (c) 2026 ishibashi0112</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ishibashi0112/webview2-bridge</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ishibashi0112/webview2-bridge</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>webview2;winforms;vb.net;net48;json-rpc;bridge;react;zod</PackageTags>
+  </PropertyGroup>
 </Project>

@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- netstandard2.0 / VB。生成 DTO・Interface・Dispatcher + JSON-RPC ランタイム。WebView2 には依存しない -->
+  <!--
+    netstandard2.0 / VB。このアプリの契約（pnpm gen が Generated/ に出す DTO・Interface・Dispatcher 拡張・Events）。
+    ランタイムは WebView2Bridge.Runtime（同リポジトリでは ProjectReference、別アプリでは NuGet の PackageReference）。
+    公開しない（アプリ固有）。
+  -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>WebView2Bridge.Contract</RootNamespace>
     <AssemblyName>WebView2Bridge.Contract</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <ProjectReference Include="..\WebView2Bridge.Runtime\WebView2Bridge.Runtime.vbproj" />
   </ItemGroup>
 </Project>

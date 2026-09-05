@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.Threading.Tasks
 Imports Newtonsoft.Json.Linq
 Imports WebView2Bridge.Contract
+Imports WebView2Bridge.Runtime
 Imports Xunit
 
 Public Class DispatcherTests
@@ -177,7 +178,7 @@ Public Class DispatcherTests
 
     <Fact>
     Public Sub Generated_Metadata_Lists_Methods_And_Events()
-        Assert.Equal("parts.search", Assert.Single(Dispatcher.MethodNames))
+        Assert.Equal("parts.search", Assert.Single(DispatcherExtensions.MethodNames))
         Assert.Equal("event.progress", Assert.Single(BridgeEvents.EventNames))
         Dim d = Create()
         Assert.Contains("parts.search", d.RegisteredMethods)

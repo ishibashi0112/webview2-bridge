@@ -1,22 +1,56 @@
 {
   "name": "@ishibashi0112/webview2-bridge-gen",
-  "version": "0.0.0",
-  "description": "zod contract -> JSON Schema -> TypeScript types + VB.NET DTO / Interface / Dispatcher generator",
-  "type": "module",
+  "version": "0.1.0",
+  "description": "zod contract -> JSON Schema -> TypeScript types + VB.NET DTO / Interface / Dispatcher generator for WinForms (.NET Framework 4.8) + WebView2 + Vite/React apps",
+  "keywords": ["webview2", "winforms", "vb.net", "zod", "json-schema", "json-rpc", "codegen", "react", "vite"],
   "license": "MIT",
+  "author": "ishibashi0112",
+  "homepage": "https://github.com/ishibashi0112/webview2-bridge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishibashi0112/webview2-bridge.git",
+    "directory": "packages/gen"
+  },
+  "bugs": "https://github.com/ishibashi0112/webview2-bridge/issues",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./generate": "./src/generate.ts"
   },
   "bin": {
     "webview2-bridge-gen": "./src/cli.ts"
   },
-  "files": ["src"],
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./generate": {
+        "types": "./dist/generate.d.ts",
+        "default": "./dist/generate.js"
+      }
+    },
+    "bin": {
+      "webview2-bridge-gen": "./dist/cli.js"
+    }
+  },
   "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "gen": "tsx src/cli.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
     "zod": "^4.0.0"

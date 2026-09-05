@@ -3,27 +3,33 @@
 WinForms (VB.NET / .NET Framework 4.8) + WebView2 + Vite/React の薄いブリッジ基盤。
 zod で書いた契約から TypeScript の型付きクライアントと VB.NET の DTO / Interface / Dispatcher を生成する。
 
-詳細は [HANDOFF.md](HANDOFF.md)（設計・仕様・決定事項）と [CLAUDE.md](CLAUDE.md)（ルール・コマンド）。
+詳細は [HANDOFF.md](HANDOFF.md)（設計・仕様・決定事項・進捗）、[CLAUDE.md](CLAUDE.md)（ルール・コマンド）、[RELEASING.md](RELEASING.md)（公開手順）。
 
 ## 構成
 
-| パス | 内容 |
-|---|---|
-| `contract/contract.ts` | zod による契約定義（唯一の正） |
-| `packages/gen` | `@ishibashi0112/webview2-bridge-gen` — 契約 → JSON Schema → TS 型 / VB コード |
-| `packages/client` | `@ishibashi0112/webview2-bridge-client` — Transport 抽象、WebView2Transport、MemoryTransport、createClient |
-| `apps/web` | Vite + React のサンプル UI（ブラウザ単体では MemoryTransport で動く） |
-| `dotnet/WebView2Bridge.Contract` | netstandard2.0 / VB — 生成物 + JSON-RPC ランタイム（WebView2 非依存） |
-| `dotnet/WebView2Bridge.Impl` | net48 / VB — 人間が書く API 実装 |
-| `dotnet/WebView2Bridge.Host` | net48 / VB — WinForms + WebView2 ホスト |
+| パス | 内容 | 公開 |
+|---|---|---|
+| `packages/gen` | `@ishibashi0112/webview2-bridge-gen` — 契約 → JSON Schema → TS 型 / VB コード | npm |
+| `packages/client` | `@ishibashi0112/webview2-bridge-client` — Transport 抽象、WebView2Transport、MemoryTransport、createClient | npm |
+| `dotnet/WebView2Bridge.Runtime` | `WebView2Bridge.Runtime` — JSON-RPC ランタイム（Dispatcher / JsonRpc / IBridgeEmitter）。netstandard2.0、WebView2 非依存 | NuGet |
+| `dotnet/WebView2Bridge.WinForms` | `WebView2Bridge.WinForms` — WebView2 コントロールと Dispatcher をつなぐ WebViewBridge。net48 | NuGet |
+| `contract/contract.ts` | zod による契約定義（唯一の正） | — |
+| `apps/web` | Vite + React のサンプル UI（ブラウザ単体では MemoryTransport で動く） | — |
+| `dotnet/WebView2Bridge.Contract` | このアプリの生成コード（`pnpm gen` の出力先）。Runtime を参照 | — |
+| `dotnet/WebView2Bridge.Impl` | 人間が書く API 実装 | — |
+| `dotnet/WebView2Bridge.Host` | WinForms + WebView2 ホスト exe | — |
+| `dotnet/WebView2Bridge.Contract.Tests` | xUnit（net8.0、Mac で `dotnet test` 可） | — |
 
 ## 使い方
 
 ```sh
 pnpm install
-pnpm gen                     # contract.ts → contract.schema.json → TS / VB を生成
-pnpm -r test                 # gen / client の Vitest
+pnpm gen                     # contract.ts → contract.schema.json → TS / VB を生成（gen:check で差分検査）
+pnpm test                    # gen / client の Vitest
+pnpm typecheck
 pnpm --filter web dev        # http://localhost:5173（MemoryTransport）
+pnpm --filter web build      # → apps/web/dist（Host ビルド時に wwwroot へコピー）
+pnpm build                   # packages/* を dist/ にビルド（公開用。開発時は不要）
 
 dotnet build dotnet/WebView2Bridge.Contract
 dotnet test  dotnet/WebView2Bridge.Contract.Tests
@@ -32,3 +38,12 @@ dotnet build dotnet/WebView2Bridge.sln            # Host の実行は Windows �
 
 Windows で Host を Vite dev server につなぐ場合は、Debug ビルドで環境変数 `WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` を設定して起動する。
 環境変数なしで起動すると exe 隣の `wwwroot`（`pnpm --filter web build` の `dist` をビルド時にコピー）を `https://app.local/` から読む。
+
+## 別のアプリから使う
+
+```sh
+pnpm add -D @ishibashi0112/webview2-bridge-gen zod && pnpm add @ishibashi0112/webview2-bridge-client zod
+```
+
+契約プロジェクトに `WebView2Bridge.Runtime`、ホストに `WebView2Bridge.WinForms` を PackageReference で追加し、
+`webview2-bridge.gen.json` の `vb.namespace` を自分の名前空間にして `webview2-bridge-gen` を実行する（RELEASING.md 参照）。

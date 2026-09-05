@@ -1,6 +1,6 @@
 Option Strict On
 
-Namespace Global.WebView2Bridge.Contract
+Namespace Global.WebView2Bridge.Runtime
 
     ''' <summary>
     ''' Host → Web の通知（JSON-RPC notification）を送る口。

@@ -7,6 +7,7 @@ Option Explicit On
 Option Infer On
 
 Imports System
+Imports WebView2Bridge.Runtime
 
 Namespace Global.WebView2Bridge.Contract
 

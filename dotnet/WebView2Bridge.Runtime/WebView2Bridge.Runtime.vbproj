@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    NuGet: WebView2Bridge.Runtime（netstandard2.0 / VB）
+    JSON-RPC 2.0 の封筒・エラー変換・Dispatcher・IBridgeEmitter。契約（生成コード）と WebView2 の両方に依存しない。
+    アプリ側の Contract プロジェクト（生成コード）がこれを参照する。
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>WebView2Bridge.Runtime</RootNamespace>
+    <AssemblyName>WebView2Bridge.Runtime</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>WebView2Bridge.Runtime</PackageId>
+    <Description>JSON-RPC 2.0 runtime for webview2-bridge: dispatcher, envelope handling and error mapping for VB.NET (.NET Framework 4.8 / netstandard2.0) hosts that talk to a WebView2 front end generated from a zod contract.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

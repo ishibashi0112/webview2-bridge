@@ -7,19 +7,24 @@ Option Explicit On
 Option Infer On
 
 Imports System
+Imports System.Runtime.CompilerServices
+Imports WebView2Bridge.Runtime
 
 Namespace Global.WebView2Bridge.Contract
 
-    Partial Public Class Dispatcher
+    ''' <summary>契約の実装を Dispatcher に登録する拡張メソッド。dispatcher.Register(api) と書ける</summary>
+    Public Module DispatcherExtensions
 
         ''' <summary>契約に含まれる全メソッド名</summary>
-        Public Shared ReadOnly MethodNames As String() = {"parts.search"}
+        Public ReadOnly MethodNames As String() = {"parts.search"}
 
         ''' <summary>"parts.*" の実装を登録する</summary>
-        Public Sub Register(api As IPartsApi)
+        <Extension>
+        Public Sub Register(dispatcher As Dispatcher, api As IPartsApi)
+            If dispatcher Is Nothing Then Throw New ArgumentNullException(NameOf(dispatcher))
             If api Is Nothing Then Throw New ArgumentNullException(NameOf(api))
-            RegisterHandler(Of PartsSearchRequest, PartsSearchResponse)("parts.search", AddressOf api.Search)
+            dispatcher.RegisterHandler(Of PartsSearchRequest, PartsSearchResponse)("parts.search", AddressOf api.Search)
         End Sub
-    End Class
+    End Module
 
 End Namespace

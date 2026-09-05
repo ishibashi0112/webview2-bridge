@@ -3,8 +3,10 @@
 
 ## ルール
 - .NET Framework 4.8 / VB.NET / Newtonsoft.Json / SDK スタイル .vbproj。C# は書かない
-- dotnet/ 配下は netstandard2.0（Contract）と net48（Impl, Host）。Contract は WebView2 に依存させない
+- dotnet/ 配下は netstandard2.0（Runtime, Contract）と net48（WinForms, Impl, Host）。Runtime と Contract は WebView2 に依存させない
   - 例外: `WebView2Bridge.Contract.Tests` は Mac で `dotnet test` するため net8.0（テスト専用）
+- 公開するのは Runtime / WinForms（NuGet）と gen / client（npm）だけ。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
+- ランタイム（Dispatcher 等）は別アセンブリなので、生成コードから Partial Class で拡張しない。生成 Dispatcher は `DispatcherExtensions` の拡張メソッド
 - VB は Option Strict On。生成ファイルは手で編集しない（`Generated/` と `apps/web/src/generated/` は `pnpm gen` で全上書き）
 - AddHostObjectToScript は使わない。通信は JSON-RPC over postMessage（HANDOFF.md §5）
 - Microsoft.VisualBasic.Compatibility 名前空間は使わない
@@ -15,7 +17,8 @@
 ## 名前
 - npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）
 - 契約: `@webview2-bridge/contract`（contract/、private・非公開）
-- .NET: `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`
+- NuGet: `WebView2Bridge.Runtime`（dotnet/WebView2Bridge.Runtime、名前空間 `WebView2Bridge.Runtime`）、`WebView2Bridge.WinForms`（dotnet/WebView2Bridge.WinForms）
+- .NET（アプリ固有）: `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`
 - 環境変数: `WEBVIEW2_BRIDGE_DEV_URL`（Debug 時に Vite dev server へ接続）
 
 ## コマンド
@@ -24,6 +27,8 @@
 - `dotnet build dotnet/WebView2Bridge.Contract` （Mac でも通ること）
 - `dotnet test dotnet/WebView2Bridge.Contract.Tests` （Mac で通ること）
 - `dotnet build dotnet/WebView2Bridge.sln` （Windows。Mac でもビルドだけは通る）
+- `pnpm build`（packages/* を dist/ に。公開用）/ `pnpm pack:npm` / `dotnet pack dotnet/WebView2Bridge.Runtime -c Release -o artifacts/nuget`
+- 公開は RELEASING.md の手順（Mac から。バージョンは packages/*/package.json と dotnet/Directory.Build.props の WebView2BridgeVersion）
 - Mac の dotnet SDK は `~/.dotnet` に導入済み（`export PATH="$HOME/.dotnet:$PATH"`）
 
 ## Windows での実行確認（Phase 3）

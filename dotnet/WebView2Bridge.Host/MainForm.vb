@@ -6,6 +6,8 @@ Imports System.Windows.Forms
 Imports Microsoft.Web.WebView2.Core
 Imports WebView2Bridge.Contract
 Imports WebView2Bridge.Impl
+Imports WebView2Bridge.Runtime
+Imports WebView2Bridge.WinForms
 
 ''' <summary>
 ''' 窓 + WebView2 + Dispatcher。人間が書くホスト側はこのファイルと WebViewBridge だけ。

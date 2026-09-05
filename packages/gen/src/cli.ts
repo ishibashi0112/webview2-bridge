@@ -1,4 +1,4 @@
-#!/usr/bin/env -S npx tsx
+#!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { generate, type GenerateConfig } from "./generate.js";

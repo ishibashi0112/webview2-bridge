@@ -59,11 +59,23 @@ describe("emitVb", () => {
     expect(dto).toContain("Public Property Extra As JToken");
   });
 
-  it("emits one Register overload per namespace", () => {
+  it("emits one Register extension method per namespace (Dispatcher lives in another assembly)", () => {
     const d = emitAll(kitchenSinkContract)["Dispatcher.Generated.vb"]!;
-    expect(d).toContain("Public Sub Register(api As ICustomersApi)");
-    expect(d).toContain("Public Sub Register(api As ISystemApi)");
-    expect(d).toContain('RegisterHandler(Of CustomersSaveRequest, CustomersSaveResponse)("customers.save", AddressOf api.Save)');
+    expect(d).toContain("Imports System.Runtime.CompilerServices");
+    expect(d).toContain("Imports WebView2Bridge.Runtime");
+    expect(d).toContain("Public Module DispatcherExtensions");
+    expect(d).toContain("<Extension>\n        Public Sub Register(dispatcher As Dispatcher, api As ICustomersApi)");
+    expect(d).toContain("<Extension>\n        Public Sub Register(dispatcher As Dispatcher, api As ISystemApi)");
+    expect(d).toContain('dispatcher.RegisterHandler(Of CustomersSaveRequest, CustomersSaveResponse)("customers.save", AddressOf api.Save)');
+    expect(d).not.toContain("Partial Public Class");
+  });
+
+  it("lets the runtime namespace be overridden", () => {
+    const files = emitVb(toSchema(sampleContract), { ...opts, runtimeNamespace: "My.Runtime" });
+    const byPath = Object.fromEntries(files.map((f) => [f.path, f.content]));
+    expect(byPath["Dispatcher.Generated.vb"]).toContain("Imports My.Runtime");
+    expect(byPath["Events.vb"]).toContain("Imports My.Runtime");
+    expect(byPath["Dto.vb"]).not.toContain("Imports My.Runtime");
   });
 
   it("rejects unions", () => {

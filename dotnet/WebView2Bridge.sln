@@ -11,6 +11,10 @@ Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "WebView2Bridge.Host", "WebV
 EndProject
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "WebView2Bridge.Contract.Tests", "WebView2Bridge.Contract.Tests\WebView2Bridge.Contract.Tests.vbproj", "{5BC21130-8362-4B38-959B-7B6C6476C0FA}"
 EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "WebView2Bridge.Runtime", "WebView2Bridge.Runtime\WebView2Bridge.Runtime.vbproj", "{985489FE-850D-42E5-B268-8EF9A1D8FB67}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "WebView2Bridge.WinForms", "WebView2Bridge.WinForms\WebView2Bridge.WinForms.vbproj", "{09A198A9-09BF-41EF-8E9C-ABCAF2919C5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{5BC21130-8362-4B38-959B-7B6C6476C0FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5BC21130-8362-4B38-959B-7B6C6476C0FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5BC21130-8362-4B38-959B-7B6C6476C0FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{985489FE-850D-42E5-B268-8EF9A1D8FB67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{985489FE-850D-42E5-B268-8EF9A1D8FB67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{985489FE-850D-42E5-B268-8EF9A1D8FB67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{985489FE-850D-42E5-B268-8EF9A1D8FB67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09A198A9-09BF-41EF-8E9C-ABCAF2919C5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09A198A9-09BF-41EF-8E9C-ABCAF2919C5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09A198A9-09BF-41EF-8E9C-ABCAF2919C5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09A198A9-09BF-41EF-8E9C-ABCAF2919C5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

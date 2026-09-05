@@ -26,3 +26,6 @@ dotnet/WebView2Bridge.Host/wwwroot/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# release artifacts (nupkg / tgz)
+artifacts/

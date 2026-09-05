@@ -6,7 +6,7 @@ Imports System.Threading.Tasks
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 
-Namespace Global.WebView2Bridge.Contract
+Namespace Global.WebView2Bridge.Runtime
 
     ''' <summary>
     ''' JSON-RPC 要求文字列を受け取り、登録されたハンドラへ振り分けて応答文字列を返す。

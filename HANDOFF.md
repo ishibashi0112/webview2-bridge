@@ -46,23 +46,28 @@ webview2-bridge/
   webview2-bridge.gen.json     # ジェネレータ設定（入力 contract / 出力先）
   HANDOFF.md                   # このファイル
   CLAUDE.md                    # §11 の内容
+  RELEASING.md                 # npm / NuGet の公開手順（Mac から行う）
+  LICENSE                      # MIT
   contract/                    # private workspace package "@webview2-bridge/contract"
     contract.ts                # zod による契約定義（唯一の正）
     contract.schema.json       # 生成: JSON Schema 中間表現（コミットする）
   packages/
-    gen/                       # ジェネレータ CLI（TS）
+    gen/                       # ジェネレータ CLI（TS）。npm: @ishibashi0112/webview2-bridge-gen
       src/
         define.ts              # defineContract()
         to-schema.ts           # zod → contract.schema.json
         emit-ts.ts             # → apps/web/src/generated/
         emit-vb.ts             # → dotnet/WebView2Bridge.Contract/Generated/
+        generate.ts / cli.ts   # 設定ファイルを読んで一括生成（CLI: webview2-bridge-gen）
       test/                    # Vitest スナップショット
-    client/                    # フロント側ランタイム（TS）
+      tsconfig.build.json      # 公開用 dist/ のビルド設定（開発時は src/*.ts を直接参照）
+    client/                    # フロント側ランタイム（TS）。npm: @ishibashi0112/webview2-bridge-client
       src/
         transport.ts           # Transport interface, JSON-RPC 型
         webview2.ts            # WebView2Transport
         memory.ts              # MemoryTransport
         create-client.ts       # createClient(contract, transport)
+        select-transport.ts    # 実行環境からの Transport 選択
   apps/
     web/                       # Vite + React
       src/generated/           # 生成物（コミットする）
@@ -71,10 +76,12 @@ webview2-bridge/
     Directory.Build.props      # LangVersion, Nullable 等の共通設定
     WebView2Bridge.sln
     WebView2Bridge.slnf              # 旧プロジェクトを除外したフィルタ（将来用）
-    WebView2Bridge.Contract/         # netstandard2.0 / VB / 生成 DTO・Interface・Dispatcher + ランタイム
+    WebView2Bridge.Runtime/          # netstandard2.0 / VB / JSON-RPC ランタイム（Dispatcher, JsonRpc, IBridgeEmitter）。NuGet: WebView2Bridge.Runtime
+    WebView2Bridge.WinForms/         # net48 / VB / WebViewBridge（WebView2 と Dispatcher の接続）。NuGet: WebView2Bridge.WinForms
+    WebView2Bridge.Contract/         # netstandard2.0 / VB / このアプリの生成 DTO・Interface・Dispatcher 拡張・Events（Runtime を参照）
     WebView2Bridge.Impl/             # net48 / VB / 人間が書く実装（DB・サーバー）
-    WebView2Bridge.Host/             # net48 / VB / WinForms exe + WebView2
-    WebView2Bridge.Contract.Tests/   # net8.0 / VB / xUnit（Dispatcher の単体テスト。Mac で dotnet test 可）
+    WebView2Bridge.Host/             # net48 / VB / WinForms exe + WebView2（WinForms パッケージを参照）
+    WebView2Bridge.Contract.Tests/   # net8.0 / VB / xUnit（Dispatcher + 生成コードの単体テスト。Mac で dotnet test 可）
 ```
 
 ## 5. 通信プロトコル（JSON-RPC 2.0 サブセット）
@@ -275,6 +282,17 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - `apps/web/dist` が存在すれば Host のビルド後に `$(OutDir)wwwroot` へコピーする MSBuild ターゲット `CopyWebDist`（無ければスキップ）。Vite は `base: "./"`
 - Host → Web の送信は `WebViewBridge.Post` で UI スレッドへマーシャリングする（`BeginInvoke`）。Impl のどのスレッドから `BridgeEvents.Progress` を呼んでもよい
 
+**パッケージ化（Phase 4、2026-09-05）**
+- 公開は 4 つ: npm `@ishibashi0112/webview2-bridge-gen` / `-client`、NuGet `WebView2Bridge.Runtime`（netstandard2.0）/ `WebView2Bridge.WinForms`（net48）。いずれも公開パッケージ（MIT）。手順は RELEASING.md。Mac から公開でき、会社 PC は公開版を restore するだけ
+- npm は pnpm の `publishConfig` で公開時だけ `exports` / `bin` を `dist/` に向ける。workspace 内の開発では従来どおり `src/*.ts` を直接参照する（ビルド不要）。`dist/` は `tsc -p tsconfig.build.json`（NodeNext）で生成
+- gen の CLI は `#!/usr/bin/env node` で動く。TypeScript の契約ファイルは `tsx/esm/api` の `tsImport` で読み込む（tsx は gen の dependency。利用側アプリに tsx を要求しない）
+- **生成 Dispatcher は Partial Class をやめ、`Public Module DispatcherExtensions` の拡張メソッドにした**。`Dispatcher` が別アセンブリ（Runtime パッケージ）に移ったため Partial では結合できない。呼び出し側の書き方 `dispatcher.Register(api)` は変わらない。`MethodNames` は `DispatcherExtensions.MethodNames`
+- ランタイムの名前空間は `WebView2Bridge.Runtime`（旧 `WebView2Bridge.Contract`）。生成される `Dispatcher.Generated.vb` と `Events.vb` は `Imports WebView2Bridge.Runtime` を持つ。名前空間は gen の `vb.runtimeNamespace` で変更可
+- `WebViewBridge` は `WebView2Bridge.WinForms` 名前空間に移動。Host は `Imports WebView2Bridge.Runtime` と `Imports WebView2Bridge.WinForms` を追加
+- NuGet のメタデータとバージョン（`WebView2BridgeVersion`）は `dotnet/Directory.Build.props` に集約。`IsPackable` は既定 false、Runtime / WinForms のみ true。XML ドキュメントを同梱
+- バージョンは npm 2 つと NuGet 2 つで同じ番号を使う（0.x 系）。生成コードとランタイムの互換性は「同じマイナー版なら互換」を目安にする
+- 別アプリで使うときの流れ: gen / client を npm から、Runtime を契約プロジェクトに、WinForms をホストに PackageReference。`vb.namespace` を自分の名前空間にする。この流れは tgz / nupkg のみを参照する一時プロジェクトで実際にビルド・実行して確認した
+
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 
 ```markdown
@@ -316,9 +334,11 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - dist → wwwroot コピー
 - 完了条件（Windows）: `WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` でホストを起動し、WebView2 内で Phase 2 の UI が VB スタブと往復する。環境変数なしで起動すると `app.local` から `dist` が読まれて同じ動作をする。F12 で DevTools が開く
 
-### Phase 4 — 切り出し（後回し）
+### Phase 4 — 切り出し
 - `packages/gen` と `packages/client` を npm 公開できる形に整える
-- `WebView2Bridge.Contract` のランタイム部分を NuGet にするかは 2 つ目のアプリで判断
+- `WebView2Bridge.Contract` のランタイム部分を `WebView2Bridge.Runtime`、Host の `WebViewBridge` を `WebView2Bridge.WinForms` として NuGet 化する
+- 完了条件: `pnpm pack` した tgz と `dotnet pack` した nupkg だけを参照する別プロジェクトで、CLI 実行・client の呼び出し・生成 VB のビルド・WinForms ホストのビルドが通る（手順は RELEASING.md）
+- 当初は「2 つ目のアプリで判断」としていたが、Mac と会社 Windows PC の間でこまめに同期できない前提のため、Windows 実機確認の直後に公開できるよう前倒しで準備した
 
 Mac で Claude Code を回す場合、Phase 0〜2 と Phase 3 のコード作成までは Mac で完結し、Phase 3 の実行確認だけ Windows で行う。Windows での確認結果（ビルドエラー、実行時エラー）はそのまま Claude Code に貼って修正させる。
 
@@ -339,11 +359,17 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 | 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen:check`、Vitest（gen 18 件、スナップショット含む）、生成 VB を含む Contract のビルド |
 | 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest（client 19 件）、`pnpm typecheck`、`pnpm --filter web build`、dev サーバーをヘッドレス Chromium で開き MemoryTransport で検索結果・progress イベント・入力検証エラー・-32000 エラーの表示を確認 |
 | 3 VB ランタイムとホスト | **コード作成とビルドまで完了。Windows での実行確認が残件** | `dotnet build dotnet/WebView2Bridge.sln`（Host 含む）、`apps/web/dist` → `bin/Debug/net48/wwwroot` コピー、`dotnet test dotnet/WebView2Bridge.Contract.Tests` 16 件 |
-| 4 切り出し | 未着手（後回し） | npm パッケージ名（`@ishibashi0112/webview2-bridge-gen` / `-client`）と `files` 指定までは済んでいる |
+| 4 切り出し | **準備完了。公開（npm publish / nuget push）は Windows 実機確認の後に Mac で実施** | `pnpm build` → `pnpm pack:npm` の tgz、`dotnet pack` の nupkg だけを参照する一時プロジェクトで、CLI 実行・client の往復・生成 VB のビルド・WinForms ホストのビルドを確認。手順は RELEASING.md |
 
 ### 経緯
 - 2026-09-05 に Mac ローカルの Claude Code で Phase 0〜3 のコードを作成（この版）。同日、別セッション（Claude Code on the web）でも HANDOFF.md だけの状態から同じ Phase 0〜3 を `wvbridge` 名で実装して main に入れたが、Mac 版のほうが完成度が高い（optional プロパティの `NullValueHandling.Ignore`、`Namespace Global.`、record / unknown 対応、VS デザイナ対応、LocalAppData のユーザーデータ等）ため **Mac 版を main に採用**した。wvbridge 版はブランチ `claude/progress-and-remaining-tasks-kv24ls` の履歴に残っている（参照用。今後は使わない）
 - 名前は `webview2-bridge` / `WebView2Bridge.*` で確定（§10 参照）
+
+### 次にやること
+1. Windows で Phase 3 の実機確認（下記）
+2. 問題があれば修正して main に入れる
+3. Mac で RELEASING.md の手順どおりに 0.1.0 を公開する（npm 2 つ、NuGet 2 つ）
+4. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
 
 ### Windows で行う残件（Phase 3 の完了条件）
 1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`

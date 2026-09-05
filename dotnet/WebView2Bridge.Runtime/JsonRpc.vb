@@ -5,7 +5,7 @@ Imports System.IO
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 
-Namespace Global.WebView2Bridge.Contract
+Namespace Global.WebView2Bridge.Runtime
 
     ''' <summary>JSON-RPC 2.0 のエラーコード（HANDOFF.md §5）</summary>
     Public NotInheritable Class JsonRpcErrorCodes

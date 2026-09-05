@@ -16,6 +16,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <ProjectReference Include="..\WebView2Bridge.Contract\WebView2Bridge.Contract.vbproj" />
     <ProjectReference Include="..\WebView2Bridge.Impl\WebView2Bridge.Impl.vbproj" />
+    <ProjectReference Include="..\WebView2Bridge.WinForms\WebView2Bridge.WinForms.vbproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="MainForm.vb">

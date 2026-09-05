@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { tsImport } from "tsx/esm/api";
 import type { ContractDef } from "./define.js";
 import { emitTs, type EmitTsOptions } from "./emit-ts.js";
 import { emitVb, type EmitVbOptions } from "./emit-vb.js";
@@ -71,8 +72,13 @@ export async function generate(config: GenerateConfig, opts: { cwd: string; chec
   return { schema, files, stale };
 }
 
+/**
+ * 契約モジュール（.ts）を読み込む。
+ * 公開パッケージは JS として実行されるので、TypeScript の契約は tsx の API で変換しながら import する
+ * （利用側のアプリに tsx を要求しない。tsx はこのパッケージの dependency）。
+ */
 async function loadContract(file: string, exportName: string): Promise<ContractDef> {
-  const mod = (await import(pathToFileURL(file).href)) as Record<string, unknown>;
+  const mod = (await tsImport(pathToFileURL(file).href, import.meta.url)) as Record<string, unknown>;
   const c = mod[exportName];
   if (!isContractDef(c)) {
     throw new GenerateError(`${file} does not export "${exportName}" created by defineContract()`);
