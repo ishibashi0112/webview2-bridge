@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "wvbridge contract",
+  "type": "object",
+  "properties": {
+    "methods": {
+      "type": "object",
+      "properties": {
+        "parts": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "object",
+                  "properties": {
+                    "keyword": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "keyword"
+                  ],
+                  "additionalProperties": false
+                },
+                "output": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/Part"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "input",
+                "output"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "search"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "parts"
+      ],
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "object",
+      "properties": {
+        "progress": {
+          "type": "object",
+          "properties": {
+            "percent": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "methods",
+    "events"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Part": {
+      "type": "object",
+      "properties": {
+        "partNo": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "qty": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "partNo",
+        "name",
+        "qty",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

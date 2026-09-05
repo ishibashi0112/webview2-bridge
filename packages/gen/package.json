@@ -1,0 +1,27 @@
+{
+  "name": "@wvbridge/gen",
+  "version": "0.0.0",
+  "private": true,
+  "description": "zod contract -> JSON Schema -> TypeScript / VB.NET generator",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./define": "./src/define.ts"
+  },
+  "bin": {
+    "wvbridge-gen": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11",
+    "zod": "^4.5.4"
+  }
+}
