@@ -1,0 +1,33 @@
+{
+  "name": "@ishibashi0112/webview2-bridge-gen",
+  "version": "0.0.0",
+  "description": "zod contract -> JSON Schema -> TypeScript types + VB.NET DTO / Interface / Dispatcher generator",
+  "type": "module",
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "webview2-bridge-gen": "./src/cli.ts"
+  },
+  "files": ["src"],
+  "scripts": {
+    "gen": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "dependencies": {
+    "tsx": "^4.23.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11",
+    "zod": "^4.5.4"
+  }
+}

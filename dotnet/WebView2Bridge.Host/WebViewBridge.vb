@@ -1,0 +1,96 @@
+Option Strict On
+
+Imports System
+Imports System.Diagnostics
+Imports System.Windows.Forms
+Imports Microsoft.Web.WebView2.Core
+Imports Microsoft.Web.WebView2.WinForms
+Imports WebView2Bridge.Contract
+
+''' <summary>
+''' WebView2 コントロールと Dispatcher をつなぐ。
+'''   Web → Host: WebMessageReceived → Dispatcher.HandleAsync → PostWebMessageAsJson
+'''   Host → Web: Emit(method, payload) → 通知 JSON → PostWebMessageAsJson（UI スレッドへマーシャリング）
+''' AddHostObjectToScript は使わない（HANDOFF.md §5）。
+''' </summary>
+Public NotInheritable Class WebViewBridge
+    Implements IBridgeEmitter
+    Implements IDisposable
+
+    Private ReadOnly _webView As WebView2
+    Private ReadOnly _dispatcher As Dispatcher
+    Private _core As CoreWebView2
+    Private _attached As Boolean
+
+    Public Sub New(webView As WebView2, dispatcher As Dispatcher)
+        If webView Is Nothing Then Throw New ArgumentNullException(NameOf(webView))
+        If dispatcher Is Nothing Then Throw New ArgumentNullException(NameOf(dispatcher))
+        _webView = webView
+        _dispatcher = dispatcher
+    End Sub
+
+    Public ReadOnly Property Dispatcher As Dispatcher
+        Get
+            Return _dispatcher
+        End Get
+    End Property
+
+    ''' <summary>EnsureCoreWebView2Async の後に呼ぶ。WebMessageReceived を購読する</summary>
+    Public Sub Attach()
+        If _attached Then Return
+        If _webView.CoreWebView2 Is Nothing Then
+            Throw New InvalidOperationException("Call EnsureCoreWebView2Async before Attach")
+        End If
+        _core = _webView.CoreWebView2
+        AddHandler _core.WebMessageReceived, AddressOf OnWebMessageReceived
+        _attached = True
+    End Sub
+
+    Private Async Sub OnWebMessageReceived(sender As Object, e As CoreWebView2WebMessageReceivedEventArgs)
+        ' Web 側は postMessage(obj) で送るので WebMessageAsJson で受ける（TryGetWebMessageAsString は使わない）
+        Dim requestJson As String = e.WebMessageAsJson
+        Dim responseJson As String
+        Try
+            ' HandleAsync は例外を投げず JSON-RPC エラーに変換する。ここは UI スレッドに戻ってくる
+            responseJson = Await _dispatcher.HandleAsync(requestJson)
+        Catch ex As Exception
+            Debug.WriteLine($"[WebViewBridge] unexpected: {ex}")
+            Return
+        End Try
+        If responseJson Is Nothing Then Return ' 通知（id なし）には応答しない
+        Post(responseJson)
+    End Sub
+
+    ''' <summary>Host → Web の通知。どのスレッドから呼んでもよい</summary>
+    Public Sub Emit(method As String, params As Object) Implements IBridgeEmitter.Emit
+        Dim json As String = _dispatcher.BuildNotification(method, params)
+        Post(json)
+    End Sub
+
+    Private Sub Post(json As String)
+        If _core Is Nothing OrElse _webView.IsDisposed Then Return
+        If _webView.InvokeRequired Then
+            _webView.BeginInvoke(New Action(Sub() PostOnUiThread(json)))
+        Else
+            PostOnUiThread(json)
+        End If
+    End Sub
+
+    Private Sub PostOnUiThread(json As String)
+        If _core Is Nothing OrElse _webView.IsDisposed Then Return
+        Try
+            _core.PostWebMessageAsJson(json)
+        Catch ex As Exception
+            ' ナビゲーション中・破棄中など。ブリッジ自体は落とさない
+            Debug.WriteLine($"[WebViewBridge] PostWebMessageAsJson failed: {ex.Message}")
+        End Try
+    End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        If _attached AndAlso _core IsNot Nothing Then
+            RemoveHandler _core.WebMessageReceived, AddressOf OnWebMessageReceived
+        End If
+        _attached = False
+        _core = Nothing
+    End Sub
+End Class

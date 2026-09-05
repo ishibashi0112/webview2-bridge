@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- net48 / VB / WinForms exe。窓 + WebView2 + Dispatcher だけを持つ -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>WebView2Bridge.Host</RootNamespace>
+    <AssemblyName>WebView2Bridge.Host</AssemblyName>
+    <MyType>WindowsForms</MyType>
+    <StartupObject>WebView2Bridge.Host.Program</StartupObject>
+    <!-- Vite の出力（apps/web/dist）。ビルド後に $(OutDir)wwwroot へコピーする -->
+    <WebDistDir>$(MSBuildProjectDirectory)\..\..\apps\web\dist</WebDistDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <ProjectReference Include="..\WebView2Bridge.Contract\WebView2Bridge.Contract.vbproj" />
+    <ProjectReference Include="..\WebView2Bridge.Impl\WebView2Bridge.Impl.vbproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="MainForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="MainForm.Designer.vb">
+      <DependentUpon>MainForm.vb</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <!-- Vite の build（pnpm run build in apps/web）済みなら dist を wwwroot として出力先へコピーする（無ければスキップ） -->
+  <Target Name="CopyWebDist" AfterTargets="Build" Condition="Exists('$(WebDistDir)\index.html')">
+    <ItemGroup>
+      <WebDistFiles Include="$(WebDistDir)\**\*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(OutDir)wwwroot" />
+    <Copy SourceFiles="@(WebDistFiles)" DestinationFiles="@(WebDistFiles->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="false" />
+    <Message Importance="high" Text="Copied web dist -> $(OutDir)wwwroot" />
+  </Target>
+</Project>

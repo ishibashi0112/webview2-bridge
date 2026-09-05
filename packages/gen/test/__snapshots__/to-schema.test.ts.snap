@@ -1,0 +1,385 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`toSchema > kitchen sink contract 1`] = `
+{
+  "$defs": {
+    "Address": {
+      "additionalProperties": false,
+      "properties": {
+        "line1": {
+          "type": "string",
+        },
+        "line2": {
+          "type": "string",
+        },
+        "zip": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+      },
+      "required": [
+        "line1",
+        "zip",
+      ],
+      "type": "object",
+    },
+    "Customer": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "$ref": "#/$defs/Address",
+        },
+        "attributes": {
+          "additionalProperties": {
+            "type": "string",
+          },
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
+        "children": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "childId": {
+                "type": "string",
+              },
+              "weight": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "childId",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "date": {
+          "description": "VB 予約語の回避を確認する",
+          "type": "string",
+        },
+        "end": {
+          "type": "boolean",
+        },
+        "extra": {},
+        "id": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        "kind": {
+          "enum": [
+            "a",
+            "b",
+          ],
+          "type": "string",
+        },
+        "meta": {
+          "additionalProperties": false,
+          "properties": {
+            "createdBy": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "createdBy",
+          ],
+          "type": "object",
+        },
+        "name": {
+          "type": "string",
+        },
+        "nullableInt": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "optionalNullableInt": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "scores": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "snake_case_name": {
+          "type": "string",
+        },
+        "status": {
+          "$ref": "#/$defs/Status",
+        },
+        "tags": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "id",
+        "name",
+        "status",
+        "tags",
+        "attributes",
+        "extra",
+        "date",
+        "snake_case_name",
+        "nullableInt",
+        "kind",
+        "children",
+      ],
+      "type": "object",
+    },
+    "Status": {
+      "enum": [
+        "open",
+        "in-progress",
+        "closed",
+        "2nd",
+      ],
+      "type": "string",
+    },
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractVersion": 1,
+  "events": {
+    "customerChanged": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        "status": {
+          "$ref": "#/$defs/Status",
+        },
+      },
+      "required": [
+        "id",
+        "status",
+      ],
+      "type": "object",
+    },
+    "log": {
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "enum": [
+            "info",
+            "warn",
+          ],
+          "type": "string",
+        },
+        "text": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "level",
+        "text",
+      ],
+      "type": "object",
+    },
+  },
+  "methods": {
+    "customers": {
+      "list": {
+        "input": {
+          "additionalProperties": false,
+          "description": "顧客一覧を取得する",
+          "properties": {
+            "page": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+          },
+          "type": "object",
+        },
+        "output": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/$defs/Customer",
+              },
+              "type": "array",
+            },
+            "total": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "items",
+            "total",
+          ],
+          "type": "object",
+        },
+      },
+      "save": {
+        "input": {
+          "additionalProperties": false,
+          "properties": {
+            "customer": {
+              "$ref": "#/$defs/Customer",
+            },
+          },
+          "required": [
+            "customer",
+          ],
+          "type": "object",
+        },
+        "output": {
+          "additionalProperties": false,
+          "properties": {
+            "ok": {
+              "type": "boolean",
+            },
+          },
+          "required": [
+            "ok",
+          ],
+          "type": "object",
+        },
+      },
+    },
+    "system": {
+      "ping": {
+        "input": {
+          "additionalProperties": false,
+          "properties": {},
+          "type": "object",
+        },
+        "output": {
+          "additionalProperties": false,
+          "properties": {
+            "time": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "time",
+          ],
+          "type": "object",
+        },
+      },
+    },
+  },
+}
+`;
+
+exports[`toSchema > sample contract 1`] = `
+{
+  "$defs": {
+    "Part": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+        "partNo": {
+          "type": "string",
+        },
+        "qty": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        "updatedAt": {
+          "description": "ISO 8601",
+          "type": "string",
+        },
+      },
+      "required": [
+        "partNo",
+        "name",
+        "qty",
+        "updatedAt",
+      ],
+      "type": "object",
+    },
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractVersion": 1,
+  "events": {
+    "progress": {
+      "additionalProperties": false,
+      "properties": {
+        "message": {
+          "type": "string",
+        },
+        "percent": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "percent",
+      ],
+      "type": "object",
+    },
+  },
+  "methods": {
+    "parts": {
+      "search": {
+        "input": {
+          "additionalProperties": false,
+          "properties": {
+            "keyword": {
+              "minLength": 1,
+              "type": "string",
+            },
+            "limit": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "keyword",
+          ],
+          "type": "object",
+        },
+        "output": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/$defs/Part",
+              },
+              "type": "array",
+            },
+          },
+          "required": [
+            "items",
+          ],
+          "type": "object",
+        },
+      },
+    },
+  },
+}
+`;

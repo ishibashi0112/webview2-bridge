@@ -1,0 +1,17 @@
+<Project>
+  <!-- dotnet/ 配下の全 SDK スタイル .vbproj に共通の設定。旧スタイル .vbproj はこのリポジトリに含めない -->
+  <PropertyGroup>
+    <OptionStrict>On</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <LangVersion>16.9</LangVersion>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- VB 既定の My 名前空間生成は不要（Contract/Impl はライブラリ） -->
+    <MyType Condition="'$(OutputType)' != 'WinExe'">Empty</MyType>
+    <!-- Mac 上で net48 / WinForms をビルドするための設定。Windows では無視される -->
+    <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>

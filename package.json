@@ -1,0 +1,21 @@
+{
+  "name": "webview2-bridge",
+  "private": true,
+  "version": "0.0.0",
+  "description": "WinForms (VB.NET 4.8) + WebView2 + Vite/React bridge: zod contract -> generated TS client / VB.NET DTO+Dispatcher",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "gen": "tsx packages/gen/src/cli.ts",
+    "build": "pnpm -r --filter './packages/*' build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "gen:check": "tsx packages/gen/src/cli.ts --check"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "tsx": "^4.23.13"
+  }
+}

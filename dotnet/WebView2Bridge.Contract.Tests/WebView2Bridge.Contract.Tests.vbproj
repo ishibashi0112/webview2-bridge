@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Contract（Dispatcher / JsonRpc / 生成 DTO）の単体テスト。
+    Mac でも `dotnet test` できるよう net8.0 にしている（テスト専用。製品コードは netstandard2.0 / net48）。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WebView2Bridge.Contract.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WebView2Bridge.Contract\WebView2Bridge.Contract.vbproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,23 @@
+{
+  "name": "@webview2-bridge/contract",
+  "private": true,
+  "version": "0.0.0",
+  "description": "zod による契約定義（唯一の正）。apps/web と packages/gen から参照される。公開しない",
+  "type": "module",
+  "main": "./contract.ts",
+  "types": "./contract.ts",
+  "exports": {
+    ".": "./contract.ts",
+    "./schema.json": "./contract.schema.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@ishibashi0112/webview2-bridge-gen": "workspace:*",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
