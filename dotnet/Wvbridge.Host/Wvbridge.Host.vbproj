@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    WinForms ホスト。窓 + WebView2 + Dispatcher だけを持つ。
+    実行・実機確認は Windows のみ。ビルドは Microsoft ビルドの .NET SDK があれば Mac / Linux でも可。
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Wvbridge.Host</RootNamespace>
+    <AssemblyName>Wvbridge.Host</AssemblyName>
+    <StartupObject>Wvbridge.Host.Program</StartupObject>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <ProjectReference Include="..\Wvbridge.Contract\Wvbridge.Contract.vbproj" />
+    <ProjectReference Include="..\Wvbridge.Impl\Wvbridge.Impl.vbproj" />
+  </ItemGroup>
+</Project>

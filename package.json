@@ -1,0 +1,21 @@
+{
+  "name": "wvbridge",
+  "private": true,
+  "version": "0.0.0",
+  "description": "WinForms(VB.NET 4.8) + WebView2 + Vite/React bridge foundation",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "gen": "tsx packages/gen/src/cli.ts --contract contract/contract.ts --schema-out contract/contract.schema.json --ts-out apps/web/src/generated --vb-out dotnet/Wvbridge.Contract/Generated",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
+    "build:web": "pnpm --filter web build",
+    "dev:web": "pnpm --filter web dev"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}
