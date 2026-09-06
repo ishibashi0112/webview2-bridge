@@ -63,7 +63,8 @@ export async function generate(config: GenerateConfig, opts: { cwd: string; chec
       files.push(target);
       if (opts.check) {
         const current = await readFile(target, "utf8").catch(() => null);
-        if (current !== f.content) stale.push(target);
+        // Windows の Git（core.autocrlf=true）が CRLF に変えていても「最新」と判定する。比較は改行を正規化して行う
+        if (current === null || normalizeEol(current) !== normalizeEol(f.content)) stale.push(target);
       } else {
         await writeFile(target, f.content, "utf8");
       }
@@ -77,6 +78,10 @@ export async function generate(config: GenerateConfig, opts: { cwd: string; chec
  * 公開パッケージは JS として実行されるので、TypeScript の契約は tsx の API で変換しながら import する
  * （利用側のアプリに tsx を要求しない。tsx はこのパッケージの dependency）。
  */
+function normalizeEol(text: string): string {
+  return text.replace(/\r\n/g, "\n");
+}
+
 async function loadContract(file: string, exportName: string): Promise<ContractDef> {
   const mod = (await tsImport(pathToFileURL(file).href, import.meta.url)) as Record<string, unknown>;
   const c = mod[exportName];

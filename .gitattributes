@@ -1,0 +1,16 @@
+# checkout 時の改行を OS に関係なく LF に固定する。
+# 生成物（pnpm gen）は LF で書かれるので、Windows の core.autocrlf=true による CRLF 化を防ぎ、
+# `pnpm gen:check` の誤検知と、コミット時の改行だけの差分を無くす。
+* text=auto eol=lf
+
+# バイナリ
+*.png binary
+*.jpg binary
+*.ico binary
+*.gif binary
+*.woff binary
+*.woff2 binary
+*.nupkg binary
+*.tgz binary
+*.dll binary
+*.exe binary
