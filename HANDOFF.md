@@ -358,7 +358,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 | 0 足場 | 完了 | `pnpm install`、`dotnet build dotnet/WebView2Bridge.Contract`、`dotnet build dotnet/WebView2Bridge.sln`（Mac / Linux でビルドのみ） |
 | 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen:check`、Vitest（gen 18 件、スナップショット含む）、生成 VB を含む Contract のビルド |
 | 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest（client 19 件）、`pnpm typecheck`、`pnpm --filter web build`、dev サーバーをヘッドレス Chromium で開き MemoryTransport で検索結果・progress イベント・入力検証エラー・-32000 エラーの表示を確認 |
-| 3 VB ランタイムとホスト | **コード作成とビルドまで完了。Windows での実行確認が残件** | `dotnet build dotnet/WebView2Bridge.sln`（Host 含む）、`apps/web/dist` → `bin/Debug/net48/wwwroot` コピー、`dotnet test dotnet/WebView2Bridge.Contract.Tests` 16 件 |
+| 3 VB ランタイムとホスト | **完了（2026-09-06 Windows 実機確認済み）** | Windows 11 で `dotnet build dotnet/WebView2Bridge.sln`（6 プロジェクト）と `dotnet test` 16 件。`WEBVIEW2_BRIDGE_DEV_URL` で dev サーバー接続: バッジ `transport: webview2`、`m6` で VB スタブの 3 件と progress 0/50/100% を受信、`error` で `-32000 Simulated failure`（`System.InvalidOperationException`）、F12 で DevTools。環境変数なし: `https://app.local/index.html` から `wwwroot` が配信され同じく `webview2` で動作 |
 | 4 切り出し | **準備完了。公開（npm publish / nuget push）は Windows 実機確認の後に Mac で実施** | `pnpm build` → `pnpm pack:npm` の tgz、`dotnet pack` の nupkg だけを参照する一時プロジェクトで、CLI 実行・client の往復・生成 VB のビルド・WinForms ホストのビルドを確認。手順は RELEASING.md |
 
 ### 経緯
@@ -366,12 +366,12 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 - 名前は `webview2-bridge` / `WebView2Bridge.*` で確定（§10 参照）
 
 ### 次にやること
-1. Windows で Phase 3 の実機確認（下記）
-2. 問題があれば修正して main に入れる
-3. Mac で RELEASING.md の手順どおりに 0.1.0 を公開する（npm 2 つ、NuGet 2 つ）
-4. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
+1. ~~Windows で Phase 3 の実機確認~~（2026-09-06 完了。見つかった問題は `pnpm gen:check` の改行差分のみで、修正済み）
+2. Mac で RELEASING.md の手順どおりに 0.1.0 を公開する（npm 2 つ、NuGet 2 つ）
+3. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
+4. 業務画面の 1 枚目を作る: 契約にメソッドを足す → `pnpm gen` → Impl に実装 → React で画面（ブラウザ単体はモックで開発、Windows で実機確認）
 
-### Windows で行う残件（Phase 3 の完了条件）
+### Windows での確認手順（Phase 3 の完了条件。2026-09-06 に確認済み。再確認用に残す）
 1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`
 2. `dotnet build dotnet/WebView2Bridge.sln`（WebView2 Runtime が入っていること。`dotnet/global.json` は .NET 8 以上の SDK を要求する）
 3. dev 接続の確認: 別ターミナルで `pnpm --filter web dev` を起動し、`set WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173`（PowerShell は `$env:WEBVIEW2_BRIDGE_DEV_URL="http://localhost:5173"`）を設定して `dotnet run --project dotnet/WebView2Bridge.Host`（または `dotnet/WebView2Bridge.Host/bin/Debug/net48/WebView2Bridge.Host.exe`）を起動。バッジが `transport: webview2` になり、検索で VB スタブ（`WebView2Bridge.Impl/PartsApi.vb`）の結果と progress が表示されること。keyword を `error` にすると -32000 が表示されること
