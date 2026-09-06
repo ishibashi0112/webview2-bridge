@@ -1,8 +1,17 @@
 {
   "name": "@ishibashi0112/webview2-bridge-client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Front-end runtime for webview2-bridge: typed JSON-RPC client over WebView2 postMessage (WebView2Transport), in-browser MemoryTransport for development, and zod validation on both ends",
-  "keywords": ["webview2", "winforms", "json-rpc", "zod", "react", "vite", "postMessage", "bridge"],
+  "keywords": [
+    "webview2",
+    "winforms",
+    "json-rpc",
+    "zod",
+    "react",
+    "vite",
+    "postMessage",
+    "bridge"
+  ],
   "license": "MIT",
   "author": "ishibashi0112",
   "homepage": "https://github.com/ishibashi0112/webview2-bridge#readme",
@@ -19,7 +28,11 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "publishConfig": {
     "access": "public",
     "main": "./dist/index.js",

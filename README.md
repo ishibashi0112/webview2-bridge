@@ -11,8 +11,8 @@ zod で書いた契約から TypeScript の型付きクライアントと VB.NET
 |---|---|---|
 | `packages/gen` | `@ishibashi0112/webview2-bridge-gen` — 契約 → JSON Schema → TS 型 / VB コード | npm |
 | `packages/client` | `@ishibashi0112/webview2-bridge-client` — Transport 抽象、WebView2Transport、MemoryTransport、createClient | npm |
-| `dotnet/WebView2Bridge.Runtime` | `WebView2Bridge.Runtime` — JSON-RPC ランタイム（Dispatcher / JsonRpc / IBridgeEmitter）。netstandard2.0、WebView2 非依存 | NuGet |
-| `dotnet/WebView2Bridge.WinForms` | `WebView2Bridge.WinForms` — WebView2 コントロールと Dispatcher をつなぐ WebViewBridge。net48 | NuGet |
+| `dotnet/WebView2Bridge.Runtime` | JSON-RPC ランタイム（Dispatcher / JsonRpc / IBridgeEmitter）。netstandard2.0、WebView2 非依存。**gen がコピーを同梱し、各アプリへ書き出す**（NuGet `WebView2Bridge.Runtime` は保留） | npm（gen 経由） |
+| `dotnet/WebView2Bridge.WinForms` | WebView2 コントロールと Dispatcher をつなぐ WebViewBridge。net48。同上（NuGet `WebView2Bridge.WinForms` は保留） | npm（gen 経由） |
 | `contract/contract.ts` | zod による契約定義（唯一の正） | — |
 | `apps/web` | Vite + React のサンプル UI（ブラウザ単体では MemoryTransport で動く） | — |
 | `dotnet/WebView2Bridge.Contract` | このアプリの生成コード（`pnpm gen` の出力先）。Runtime を参照 | — |
@@ -45,5 +45,6 @@ Windows で Host を Vite dev server につなぐ場合は、Debug ビルドで�
 pnpm add -D @ishibashi0112/webview2-bridge-gen zod && pnpm add @ishibashi0112/webview2-bridge-client zod
 ```
 
-契約プロジェクトに `WebView2Bridge.Runtime`、ホストに `WebView2Bridge.WinForms` を PackageReference で追加し、
-`webview2-bridge.gen.json` の `vb.namespace` を自分の名前空間にして `webview2-bridge-gen` を実行する（RELEASING.md 参照）。
+`webview2-bridge.gen.json` に `vb.namespace`（自分の名前空間）と `vb.runtime.outDir` / `vb.winforms.outDir` を書いて
+`webview2-bridge-gen` を実行すると、契約の生成物に加えて VB ランタイムと WebViewBridge も書き出される。
+VB 側の NuGet 参照は Newtonsoft.Json と Microsoft.Web.WebView2 だけでよい（RELEASING.md 参照）。

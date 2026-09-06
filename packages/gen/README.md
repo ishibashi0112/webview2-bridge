@@ -91,6 +91,26 @@ Unions, intersections, dates and bigints are rejected with a clear error.
 Naming: `.meta({ id })` wins; otherwise `<Namespace><Method>Request` / `Response`, `<Event>Event`,
 nested objects `<Owner><Prop>`, array items singularized (`items` → `Item`).
 
+## VB runtime without NuGet
+
+The VB.NET runtime (`Dispatcher`, `JsonRpc`, `IBridgeEmitter`) and the WinForms glue (`WebViewBridge`) are bundled
+in this package. Point `vb.runtime.outDir` / `vb.winforms.outDir` at your projects and the generator writes them as
+auto-generated files, so **no custom NuGet package is needed** — your Contract project only references `Newtonsoft.Json`
+and your Host only `Microsoft.Web.WebView2`.
+
+```jsonc
+"vb": {
+  "outDir": "dotnet/MyApp.Contract/Generated",
+  "namespace": "MyApp.Contract",
+  "runtime":  { "outDir": "dotnet/MyApp.Contract/Runtime" },
+  "winforms": { "outDir": "dotnet/MyApp.Host/Bridge" }
+}
+```
+
+The files keep the namespaces `WebView2Bridge.Runtime` / `WebView2Bridge.WinForms`, so the code you write is identical
+whether the runtime comes from these files or from the NuGet packages of the same name. Upgrading the runtime = upgrading
+this npm package and running the generator again (`--check` reports outdated copies).
+
 ## Options (`vb`)
 
 | Option | Default | Meaning |
@@ -100,12 +120,14 @@ nested objects `<Owner><Prop>`, array items singularized (`items` → `Item`).
 | `dispatcherClass` | `Dispatcher` | runtime dispatcher class name |
 | `eventsClass` | `BridgeEvents` | generated events helper class name |
 | `emitterInterface` | `IBridgeEmitter` | runtime emitter interface name |
+| `runtime.outDir` | — | write the bundled VB runtime (3 files) here; omit when using the NuGet package or a ProjectReference |
+| `winforms.outDir` | — | write the bundled `WebViewBridge.vb` here; omit when using the NuGet package or a ProjectReference |
 
 ## Programmatic use
 
 ```ts
 import { defineContract, toSchema, emitTs, emitVb } from "@ishibashi0112/webview2-bridge-gen";
-import { generate } from "@ishibashi0112/webview2-bridge-gen/generate"; // Node only (fs)
+import { generate, emitVbRuntime } from "@ishibashi0112/webview2-bridge-gen/generate"; // Node only (fs)
 ```
 
 MIT

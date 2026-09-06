@@ -5,7 +5,8 @@
 - .NET Framework 4.8 / VB.NET / Newtonsoft.Json / SDK スタイル .vbproj。C# は書かない
 - dotnet/ 配下は netstandard2.0（Runtime, Contract）と net48（WinForms, Impl, Host）。Runtime と Contract は WebView2 に依存させない
   - 例外: `WebView2Bridge.Contract.Tests` は Mac で `dotnet test` するため net8.0（テスト専用）
-- 公開するのは Runtime / WinForms（NuGet）と gen / client（npm）だけ。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
+- 公開するのは gen / client（npm）。VB ランタイム（Runtime / WinForms）は gen が `vb-runtime/` に同梱して各アプリへ書き出す（NuGet は保留）。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
+- `packages/gen/vb-runtime/` は `dotnet/WebView2Bridge.Runtime` と `WebView2Bridge.WinForms` のコピー。手で編集せず `pnpm --filter @ishibashi0112/webview2-bridge-gen sync:vb-runtime`（`pnpm build` で自動）で同期する。VB ランタイムを直したら gen のバージョンを上げる
 - ランタイム（Dispatcher 等）は別アセンブリなので、生成コードから Partial Class で拡張しない。生成 Dispatcher は `DispatcherExtensions` の拡張メソッド
 - VB は Option Strict On。生成ファイルは手で編集しない（`Generated/` と `apps/web/src/generated/` は `pnpm gen` で全上書き）
 - AddHostObjectToScript は使わない。通信は JSON-RPC over postMessage（HANDOFF.md §5）

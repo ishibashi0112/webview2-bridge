@@ -293,6 +293,16 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - バージョンは npm 2 つと NuGet 2 つで同じ番号を使う（0.x 系）。生成コードとランタイムの互換性は「同じマイナー版なら互換」を目安にする
 - 別アプリで使うときの流れ: gen / client を npm から、Runtime を契約プロジェクトに、WinForms をホストに PackageReference。`vb.namespace` を自分の名前空間にする。この流れは tgz / nupkg のみを参照する一時プロジェクトで実際にビルド・実行して確認した
 
+**NuGet 保留と gen によるランタイム出力（2026-09-06）**
+- npm 0.1.0 を公開した時点で、管理を npm 1 系統にまとめたいという要望により **NuGet の公開は保留**にした（pack できる状態は維持）。理由: Mac と会社 PC がこまめに同期できず、管理するパッケージは少ないほどよい。VB ランタイムの改修は稀
+- 代わりに gen が VB ランタイムを同梱し、設定 `vb.runtime.outDir` / `vb.winforms.outDir` で各アプリに書き出す。`packages/gen/vb-runtime/` は `dotnet/` のコピー（`scripts/sync-vb-runtime.mjs`、`pnpm build` で自動同期、テストで同期を検証）。唯一の正は引き続き `dotnet/` 側
+- 書き出すファイルは auto-generated ヘッダ（gen のバージョン入り）付きで、`pnpm gen` で上書きされる。名前空間は NuGet 版と同じ `WebView2Bridge.Runtime` / `WebView2Bridge.WinForms` なので、どちらを使っても契約の生成物と呼び出し側は同一
+- 同じディレクトリに複数の出力を向けても互いの生成物を消さないよう、古い生成物の削除はディレクトリ単位でまとめて行う
+- このリポジトリでは `runtime` / `winforms` を設定せず ProjectReference のまま（`webview2-bridge.gen.json` は変更なし）
+- 検証: gen 0.2.0 の tgz だけを入れた別アプリで、nuget.org の Newtonsoft.Json と Microsoft.Web.WebView2 以外を使わずに Contract / Impl / Host（WinForms exe）がビルドできた
+- 単位の整理: アプリ 1 つ = Host の exe 1 つ = リポジトリ 1 つ（フロントと VB は同じリポジトリに置く。契約が唯一の正で両側へ生成するため）。既存 VB アプリの 1 Form として組み込む形も可
+- 次の候補: 新しいアプリの骨組み（contract.ts、gen.json、3 つの .vbproj、MainForm、web）を置く `webview2-bridge-gen init` コマンド
+
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 
 ```markdown
@@ -359,7 +369,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 | 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen:check`、Vitest（gen 18 件、スナップショット含む）、生成 VB を含む Contract のビルド |
 | 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest（client 19 件）、`pnpm typecheck`、`pnpm --filter web build`、dev サーバーをヘッドレス Chromium で開き MemoryTransport で検索結果・progress イベント・入力検証エラー・-32000 エラーの表示を確認 |
 | 3 VB ランタイムとホスト | **完了（2026-09-06 Windows 実機確認済み）** | Windows 11 で `dotnet build dotnet/WebView2Bridge.sln`（6 プロジェクト）と `dotnet test` 16 件。`WEBVIEW2_BRIDGE_DEV_URL` で dev サーバー接続: バッジ `transport: webview2`、`m6` で VB スタブの 3 件と progress 0/50/100% を受信、`error` で `-32000 Simulated failure`（`System.InvalidOperationException`）、F12 で DevTools。環境変数なし: `https://app.local/index.html` から `wwwroot` が配信され同じく `webview2` で動作 |
-| 4 切り出し | **準備完了。公開（npm publish / nuget push）は Windows 実機確認の後に Mac で実施** | `pnpm build` → `pnpm pack:npm` の tgz、`dotnet pack` の nupkg だけを参照する一時プロジェクトで、CLI 実行・client の往復・生成 VB のビルド・WinForms ホストのビルドを確認。手順は RELEASING.md |
+| 4 切り出し | **npm 0.1.0 公開済み。NuGet は保留。gen 0.2.0 で VB ランタイム出力を追加（公開待ち）** | tgz だけを入れた別アプリで、NuGet は Newtonsoft.Json と Microsoft.Web.WebView2 のみでビルドできることを確認（Linux）。手順は RELEASING.md |
 
 ### 経緯
 - 2026-09-05 に Mac ローカルの Claude Code で Phase 0〜3 のコードを作成（この版）。同日、別セッション（Claude Code on the web）でも HANDOFF.md だけの状態から同じ Phase 0〜3 を `wvbridge` 名で実装して main に入れたが、Mac 版のほうが完成度が高い（optional プロパティの `NullValueHandling.Ignore`、`Namespace Global.`、record / unknown 対応、VS デザイナ対応、LocalAppData のユーザーデータ等）ため **Mac 版を main に採用**した。wvbridge 版はブランチ `claude/progress-and-remaining-tasks-kv24ls` の履歴に残っている（参照用。今後は使わない）
@@ -367,7 +377,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 
 ### 次にやること
 1. ~~Windows で Phase 3 の実機確認~~（2026-09-06 完了。見つかった問題は `pnpm gen:check` の改行差分のみで、修正済み）
-2. Mac で RELEASING.md の手順どおりに 0.1.0 を公開する（npm 2 つ、NuGet 2 つ）
+2. ~~npm 0.1.0 を公開~~（完了）。gen / client **0.2.0**（VB ランタイム出力）を Mac で `pnpm publish:npm` する。NuGet は公開しない
 3. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
 4. 業務画面の 1 枚目を作る: 契約にメソッドを足す → `pnpm gen` → Impl に実装 → React で画面（ブラウザ単体はモックで開発、Windows で実機確認）
 

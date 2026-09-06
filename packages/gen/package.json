@@ -1,8 +1,18 @@
 {
   "name": "@ishibashi0112/webview2-bridge-gen",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "zod contract -> JSON Schema -> TypeScript types + VB.NET DTO / Interface / Dispatcher generator for WinForms (.NET Framework 4.8) + WebView2 + Vite/React apps",
-  "keywords": ["webview2", "winforms", "vb.net", "zod", "json-schema", "json-rpc", "codegen", "react", "vite"],
+  "keywords": [
+    "webview2",
+    "winforms",
+    "vb.net",
+    "zod",
+    "json-schema",
+    "json-rpc",
+    "codegen",
+    "react",
+    "vite"
+  ],
   "license": "MIT",
   "author": "ishibashi0112",
   "homepage": "https://github.com/ishibashi0112/webview2-bridge#readme",
@@ -26,7 +36,12 @@
   "bin": {
     "webview2-bridge-gen": "./src/cli.ts"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "vb-runtime",
+    "README.md",
+    "LICENSE"
+  ],
   "publishConfig": {
     "access": "public",
     "main": "./dist/index.js",
@@ -46,11 +61,12 @@
     }
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "build": "pnpm sync:vb-runtime && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "gen": "tsx src/cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build",
+    "sync:vb-runtime": "node scripts/sync-vb-runtime.mjs"
   },
   "peerDependencies": {
     "zod": "^4.0.0"

@@ -8,6 +8,7 @@ import { emitVb, type EmitVbOptions } from "./emit-vb.js";
 import type { EmittedFile } from "./emitted.js";
 import { GenerateError, type ContractSchema } from "./schema.js";
 import { toSchema } from "./to-schema.js";
+import { emitVbRuntime } from "./vb-runtime.js";
 
 export interface GenerateConfig {
   /** zod 契約モジュール（`export const contract = defineContract(...)`） */
@@ -17,7 +18,19 @@ export interface GenerateConfig {
   /** contract.schema.json の出力先 */
   schemaOut: string;
   ts?: { outDir: string } & EmitTsOptions;
-  vb?: { outDir: string } & EmitVbOptions;
+  vb?: { outDir: string } & EmitVbOptions & {
+    /**
+     * VB ランタイム（JsonRpc / Dispatcher / IBridgeEmitter）の書き出し先。
+     * 設定すると NuGet の WebView2Bridge.Runtime は不要（Contract プロジェクトには Newtonsoft.Json の参照だけが要る）。
+     * 省略時は書き出さない（同リポジトリで ProjectReference する場合や NuGet を使う場合）
+     */
+    runtime?: { outDir: string };
+    /**
+     * WinForms 用 WebViewBridge の書き出し先（Host プロジェクト内）。
+     * 設定すると NuGet の WebView2Bridge.WinForms は不要（Host には Microsoft.Web.WebView2 の参照が要る）
+     */
+    winforms?: { outDir: string };
+  };
 }
 
 export interface GenerateResult {
@@ -47,17 +60,30 @@ export async function generate(config: GenerateConfig, opts: { cwd: string; chec
     outputs.push({ dir: abs(outDir), ext: ".ts", files: emitTs(schema, tsOpts) });
   }
   if (config.vb) {
-    const { outDir, ...vbOpts } = config.vb;
+    const { outDir, runtime, winforms, ...vbOpts } = config.vb;
     outputs.push({ dir: abs(outDir), ext: ".vb", files: emitVb(schema, vbOpts) });
+    if (runtime) outputs.push({ dir: abs(runtime.outDir), ext: ".vb", files: await emitVbRuntime("runtime") });
+    if (winforms) outputs.push({ dir: abs(winforms.outDir), ext: ".vb", files: await emitVbRuntime("winforms") });
+  }
+
+  // 同じディレクトリに複数の出力（例: Generated/ にランタイムも置く）があっても、互いのファイルを消さないよう
+  // ディレクトリ単位で「今回出力するファイル」をまとめてから古い生成物を消す
+  const keepByDir = new Map<string, { ext: string; keep: Set<string> }>();
+  for (const o of outputs) {
+    const entry = keepByDir.get(o.dir) ?? { ext: o.ext, keep: new Set<string>() };
+    for (const f of o.files) entry.keep.add(f.path);
+    keepByDir.set(o.dir, entry);
   }
 
   const files: string[] = [];
   const stale: string[] = [];
-  for (const o of outputs) {
-    if (!opts.check) {
-      await mkdir(o.dir, { recursive: true });
-      await removeStaleGenerated(o.dir, o.ext, new Set(o.files.map((f) => f.path)));
+  if (!opts.check) {
+    for (const [dir, entry] of keepByDir) {
+      await mkdir(dir, { recursive: true });
+      await removeStaleGenerated(dir, entry.ext, entry.keep);
     }
+  }
+  for (const o of outputs) {
     for (const f of o.files) {
       const target = path.join(o.dir, f.path);
       files.push(target);
@@ -110,3 +136,5 @@ async function removeStaleGenerated(dir: string, ext: string, keep: Set<string>)
     if (head.includes(AUTO_GENERATED_MARK)) await rm(full);
   }
 }
+
+export { emitVbRuntime, genPackageVersion, VB_RUNTIME_FILES, type VbRuntimeKind } from "./vb-runtime.js";

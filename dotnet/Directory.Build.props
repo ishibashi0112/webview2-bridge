@@ -20,7 +20,7 @@
     （各 .vbproj で IsPackable=true）。バージョンはここ 1 か所で管理する（RELEASING.md）。
   -->
   <PropertyGroup>
-    <WebView2BridgeVersion>0.1.0</WebView2BridgeVersion>
+    <WebView2BridgeVersion>0.2.0</WebView2BridgeVersion>
     <Version>$(WebView2BridgeVersion)</Version>
     <IsPackable>false</IsPackable>
     <Authors>ishibashi0112</Authors>
