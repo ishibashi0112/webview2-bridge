@@ -1,0 +1,6 @@
+packages:
+  - web
+
+# gen が使う tsx は esbuild に依存する。pnpm 11 は postinstall を既定で止めるので許可が必要
+allowBuilds:
+  esbuild: true

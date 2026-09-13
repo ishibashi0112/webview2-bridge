@@ -24,7 +24,8 @@ NuGet を公開するのは、アプリが増えてランタイムを DLL で共
 ## 1. バージョンを上げる
 
 2 か所。npm 2 つと `WebView2BridgeVersion` は同じ番号で揃える（0.x 系。修正はパッチ版、機能追加はマイナー版）。
-VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`）を直したときも gen の番号を上げる（gen がコピーを同梱しているため）。
+VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`）や雛形（`templates/myapp`）を直したときも gen の番号を上げる（gen がコピーを同梱しているため）。
+`templates/myapp/package.json` と `templates/myapp/web/package.json` の gen / client の版も同じ番号にする（`init.test.ts` が一致を検証する）。
 
 ```sh
 # npm（packages/gen と packages/client の "version"。手で編集してもよい）
@@ -77,7 +78,7 @@ unzip -l artifacts/nuget/WebView2Bridge.Runtime.0.1.1.nupkg
 
 このリポジトリの中では workspace リンクと ProjectReference を使い続ける（公開版には依存しない）。
 
-**別のアプリから使う場合（npm だけで完結）** — 雛形は `templates/myapp/`（README に手順あり）
+**別のアプリから使う場合（npm だけで完結）** — `pnpm dlx @ishibashi0112/webview2-bridge-gen init my-app --name MyInventory` で骨組みを書き出す（雛形は `templates/myapp/`、README に手順あり）。以下は手で組む場合の要点
 
 `pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` を置く（pnpm 11 は esbuild の postinstall を既定で止めるため。無いと gen が動かない）。
 

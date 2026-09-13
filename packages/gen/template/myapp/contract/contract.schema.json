@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractVersion": 1,
+  "$defs": {
+    "Customer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "methods": {
+    "customers": {
+      "list": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "keyword": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Customer"
+              }
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "events": {
+    "progress": {
+      "type": "object",
+      "properties": {
+        "percent": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "percent"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

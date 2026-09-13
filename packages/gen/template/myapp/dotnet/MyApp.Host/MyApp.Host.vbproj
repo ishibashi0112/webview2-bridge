@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>MyApp.Host</RootNamespace>
+    <MyType>WindowsForms</MyType>
+    <StartupObject>MyApp.Host.Program</StartupObject>
+    <!--
+      AnyCPU のままだと Windows の dotnet build で exe は 64 ビット、WebView2Loader.dll は x86 だけ出力されて
+      起動時に BadImageFormatException になる（SDK が .NET Framework exe に win7-x86 を仮定し、WebView2 の
+      ローダーコピーと食い違う）。x64 に固定して揃える。32 ビット専用の DB ドライバ等が要るなら x86 にする。
+    -->
+    <PlatformTarget>x64</PlatformTarget>
+    <WebDistDir>$(MSBuildProjectDirectory)\..\..\web\dist</WebDistDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <ProjectReference Include="..\MyApp.Contract\MyApp.Contract.vbproj" />
+    <ProjectReference Include="..\MyApp.Impl\MyApp.Impl.vbproj" />
+  </ItemGroup>
+  <Target Name="CopyWebDist" AfterTargets="Build" Condition="Exists('$(WebDistDir)\index.html')">
+    <ItemGroup><WebDistFiles Include="$(WebDistDir)\**\*" /></ItemGroup>
+    <RemoveDir Directories="$(OutDir)wwwroot" />
+    <Copy SourceFiles="@(WebDistFiles)" DestinationFiles="@(WebDistFiles->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

@@ -138,3 +138,4 @@ async function removeStaleGenerated(dir: string, ext: string, keep: Set<string>)
 }
 
 export { emitVbRuntime, genPackageVersion, VB_RUNTIME_FILES, type VbRuntimeKind } from "./vb-runtime.js";
+export { scaffold, defaultAppName, validateAppName, bundledTemplateDir, TEMPLATE_NAME, type ScaffoldOptions, type ScaffoldResult } from "./init.js";

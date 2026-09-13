@@ -39,6 +39,7 @@
   "files": [
     "dist",
     "vb-runtime",
+    "template",
     "README.md",
     "LICENSE"
   ],
@@ -61,12 +62,14 @@
     }
   },
   "scripts": {
-    "build": "pnpm sync:vb-runtime && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "build": "pnpm sync && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "gen": "tsx src/cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
-    "sync:vb-runtime": "node scripts/sync-vb-runtime.mjs"
+    "sync": "pnpm sync:vb-runtime && pnpm sync:template",
+    "sync:vb-runtime": "node scripts/sync-vb-runtime.mjs",
+    "sync:template": "node scripts/sync-template.mjs"
   },
   "peerDependencies": {
     "zod": "^4.0.0"

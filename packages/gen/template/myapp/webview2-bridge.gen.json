@@ -1,0 +1,11 @@
+{
+  "contract": "contract/contract.ts",
+  "schemaOut": "contract/contract.schema.json",
+  "ts": { "outDir": "web/src/generated", "contractImport": "../../../contract/contract" },
+  "vb": {
+    "outDir": "dotnet/MyApp.Contract/Generated",
+    "namespace": "MyApp.Contract",
+    "runtime":  { "outDir": "dotnet/MyApp.Contract/Runtime" },
+    "winforms": { "outDir": "dotnet/MyApp.Host/Bridge" }
+  }
+}

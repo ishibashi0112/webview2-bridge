@@ -20,6 +20,18 @@ pnpm add -D @ishibashi0112/webview2-bridge-gen zod
 
 Requires Node.js 20.19+ and zod 4.
 
+## Start a new app
+
+```sh
+pnpm dlx @ishibashi0112/webview2-bridge-gen init my-app --name MyInventory
+cd my-app && pnpm install && pnpm gen:check
+```
+
+`init` writes a complete skeleton (31 files): the zod contract, a Vite + React app with a mock transport,
+and three VB.NET projects (`<Name>.Contract` netstandard2.0, `<Name>.Impl` net48, `<Name>.Host` WinForms net48)
+including the generated code and the bundled VB runtime. `--name` becomes the VB namespace / project names
+(PascalCase; defaults to the directory name). The generated README walks through the dev loop and the Windows checks.
+
 ## Define the contract
 
 ```ts
