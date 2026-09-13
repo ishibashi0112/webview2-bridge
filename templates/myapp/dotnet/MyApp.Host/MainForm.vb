@@ -59,11 +59,13 @@ Public Class MainForm
             Else
                 Dim wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot")
                 If Not File.Exists(Path.Combine(wwwroot, "index.html")) Then
+                    ' 無いフォルダを SetVirtualHostNameToFolderMapping に渡すと DirectoryNotFoundException になるので、ここで止める
                     MessageBox.Show(
                         $"wwwroot が見つかりません: {wwwroot}{Environment.NewLine}" &
                         "`pnpm build:web` の後に Host をビルドすると web/dist がコピーされます。" & Environment.NewLine &
                         $"開発中は環境変数 {DevUrlEnvVar}=http://localhost:5173 を設定して起動してください。",
                         Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Return
                 End If
                 core.SetVirtualHostNameToFolderMapping(VirtualHost, wwwroot, CoreWebView2HostResourceAccessKind.Allow)
                 core.Navigate($"https://{VirtualHost}/index.html")
