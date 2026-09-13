@@ -378,7 +378,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 | 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen:check`、Vitest（gen 18 件、スナップショット含む）、生成 VB を含む Contract のビルド |
 | 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest（client 19 件）、`pnpm typecheck`、`pnpm --filter web build`、dev サーバーをヘッドレス Chromium で開き MemoryTransport で検索結果・progress イベント・入力検証エラー・-32000 エラーの表示を確認 |
 | 3 VB ランタイムとホスト | **完了（2026-09-06 Windows 実機確認済み）** | Windows 11 で `dotnet build dotnet/WebView2Bridge.sln`（6 プロジェクト）と `dotnet test` 16 件。`WEBVIEW2_BRIDGE_DEV_URL` で dev サーバー接続: バッジ `transport: webview2`、`m6` で VB スタブの 3 件と progress 0/50/100% を受信、`error` で `-32000 Simulated failure`（`System.InvalidOperationException`）、F12 で DevTools。環境変数なし: `https://app.local/index.html` から `wwwroot` が配信され同じく `webview2` で動作 |
-| 4 切り出し | **完了。npm 0.3.0 公開済み（2026-09-13。init コマンド、PlatformTarget x64 固定）。NuGet は保留** | レジストリの gen 0.2.0 / client 0.2.0 だけを入れた新規アプリで CLI が VB ランタイム込みの 10 ファイルを生成することを確認。tgz 版では NuGet を Newtonsoft.Json と Microsoft.Web.WebView2 のみでビルドできることも確認済み。手順は RELEASING.md |
+| 4 切り出し | **完了。npm 3 つ（gen / client / create-webview2-bridge）を 0.3.0 で公開済み（2026-09-13。init コマンド、PlatformTarget x64 固定）。NuGet は保留** | レジストリの gen 0.2.0 / client 0.2.0 だけを入れた新規アプリで CLI が VB ランタイム込みの 10 ファイルを生成することを確認。tgz 版では NuGet を Newtonsoft.Json と Microsoft.Web.WebView2 のみでビルドできることも確認済み。手順は RELEASING.md |
 
 ### 経緯
 - 2026-09-05 に Mac ローカルの Claude Code で Phase 0〜3 のコードを作成（この版）。同日、別セッション（Claude Code on the web）でも HANDOFF.md だけの状態から同じ Phase 0〜3 を `wvbridge` 名で実装して main に入れたが、Mac 版のほうが完成度が高い（optional プロパティの `NullValueHandling.Ignore`、`Namespace Global.`、record / unknown 対応、VS デザイナ対応、LocalAppData のユーザーデータ等）ため **Mac 版を main に採用**した。wvbridge 版はブランチ `claude/progress-and-remaining-tasks-kv24ls` の履歴に残っている（参照用。今後は使わない）
@@ -389,7 +389,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 2. ~~gen / client 0.2.0 を公開~~（2026-09-06 完了。npm 上の gen は 0.2.0 のみ、client は 0.1.0 と 0.2.0。NuGet は公開しない）
 3. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
 4. 業務画面の 1 枚目を作る: 契約にメソッドを足す → `pnpm gen` → Impl に実装 → React で画面（ブラウザ単体はモックで開発、Windows で実機確認）
-5. 新規アプリは `webview2-bridge-gen init` で始める（2026-09-13 実装、同日 gen / client 0.3.0 として npm 公開済み。雛形 `templates/myapp/` は Windows 実機で起動確認済み）。次は `create-webview2-bridge` 0.3.0 を公開し、公開版の `pnpm create webview2-bridge <dir> --name <Name>` を Windows で一度確認して、業務画面の 1 枚目へ
+5. 新規アプリは `webview2-bridge-gen init` で始める（2026-09-13 実装、同日 gen / client 0.3.0 として npm 公開済み。雛形 `templates/myapp/` は Windows 実機で起動確認済み）。`create-webview2-bridge` 0.3.0 も同日公開し、Mac で公開版だけを使い `pnpm create webview2-bridge my-app --name MyInventory` → install → gen:check（10 files）→ web build → `dotnet build -c Release`（0 警告、win-x64 ローダー）が通ることを確認。次は Windows で同じ手順を一度通してから業務画面の 1 枚目へ
 
 ### Windows での確認手順（Phase 3 の完了条件。2026-09-06 に確認済み。再確認用に残す）
 1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`
