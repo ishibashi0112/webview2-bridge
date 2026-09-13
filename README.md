@@ -11,6 +11,7 @@ zod で書いた契約から TypeScript の型付きクライアントと VB.NET
 |---|---|---|
 | `packages/gen` | `@ishibashi0112/webview2-bridge-gen` — 契約 → JSON Schema → TS 型 / VB コード | npm |
 | `packages/client` | `@ishibashi0112/webview2-bridge-client` — Transport 抽象、WebView2Transport、MemoryTransport、createClient | npm |
+| `packages/create` | `create-webview2-bridge` — `pnpm create webview2-bridge <dir>` で新規アプリを書き出す（gen の `init` の短い入口） | npm |
 | `dotnet/WebView2Bridge.Runtime` | JSON-RPC ランタイム（Dispatcher / JsonRpc / IBridgeEmitter）。netstandard2.0、WebView2 非依存。**gen がコピーを同梱し、各アプリへ書き出す**（NuGet `WebView2Bridge.Runtime` は保留） | npm（gen 経由） |
 | `dotnet/WebView2Bridge.WinForms` | WebView2 コントロールと Dispatcher をつなぐ WebViewBridge。net48。同上（NuGet `WebView2Bridge.WinForms` は保留） | npm（gen 経由） |
 | `contract/contract.ts` | zod による契約定義（唯一の正） | — |
@@ -49,7 +50,7 @@ pnpm add -D @ishibashi0112/webview2-bridge-gen zod && pnpm add @ishibashi0112/we
 `webview2-bridge-gen` を実行すると、契約の生成物に加えて VB ランタイムと WebViewBridge も書き出される。
 VB 側の NuGet 参照は Newtonsoft.Json と Microsoft.Web.WebView2 だけでよい（RELEASING.md 参照）。
 
-**新規アプリは `init` で作る**: `pnpm dlx @ishibashi0112/webview2-bridge-gen init my-app --name MyInventory`。
+**新規アプリは `pnpm create webview2-bridge my-app --name MyInventory` で作る**（`pnpm dlx @ishibashi0112/webview2-bridge-gen init ...` と同じ）。
 雛形の正体は [templates/myapp](templates/myapp/)（contract / web / dotnet の 3 プロジェクト / gen.json / README）で、gen がコピーを同梱し `MyApp` を指定名に置換して書き出す。
 公開前の版を試すときはこのリポジトリで `pnpm gen init <dir> --name <Name>`。
 pnpm 11 は esbuild（gen が使う tsx の依存）の postinstall を既定で止めるので、新しいアプリの `pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` が必要（雛形には設定済み）。

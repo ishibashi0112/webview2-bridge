@@ -309,6 +309,7 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - 見つかった落とし穴 2 つを雛形と README / RELEASING.md に反映: (1) pnpm 11 は esbuild の postinstall を止めるので `allowBuilds: { esbuild: true }` が必須、(2) `ts.contractImport` は生成ファイルの場所からの相対パス（`web/src/generated/` なら `../../../contract/contract`）
 - **Host は `PlatformTarget` を x64 に固定する（2026-09-13、Windows 実機で判明）**。AnyCPU のままだと Windows の `dotnet build` で SDK が .NET Framework exe に `win7-x86` を仮定し、WebView2 の targets が `runtimes\win-x86` のローダーだけを出力する一方、SDK の後段処理（`GetDefaultPlatformTargetForNetFramework`。`runtimes/win7-x86/` 配下の native 資産しか見ない）が PlatformTarget を AnyCPU に戻すため、exe は 64 ビットで動き、exe 隣に置かれた x86 の `WebView2Loader.dll` を拾って `BadImageFormatException` になる。本体 Host は `WebView2Bridge.WinForms` の ProjectReference 経由で 3 種類のローダーが出力に混ざるため偶然動いていた（テンプレートは WebViewBridge をソースで取り込むので救いがなかった）。Mac 上では RID 推定が走らないので再現しない。x86 専用のドライバが要るアプリは x86 に固定する（AnyCPU には戻さない）
 - **`webview2-bridge-gen init <dir> [--name <Name>] [--force]` を実装（2026-09-13）**。`templates/myapp/` を `packages/gen/template/myapp/` に同期（`scripts/sync-template.mjs`、`pnpm build` で自動、`init.test.ts` が同期と「雛形の生成物が現行 gen で最新」「雛形の package.json が gen と同じ版」を検証）して npm に同梱し、init はそれをコピーして `MyApp` → 指定名、`myapp` → 小文字名に置換、.sln のプロジェクト GUID を振り直す。`.gitignore` は npm pack が改名するので `_gitignore` として同梱し init が戻す。名前は VB 識別子（`^[A-Za-z_][A-Za-z0-9_]*$`）に限定、既定はディレクトリ名の PascalCase。init は tsx / zod を読まない（CLI で generate を遅延 import）。リポジトリ内では `pnpm gen init` で公開前の版を試せる。検証: dist の CLI で生成した別アプリが npm 0.2.0 だけで install / gen:check / web build / dotnet build まで通る
+- **`create-webview2-bridge` を追加（2026-09-13）**。`pnpm create <name>` は `create-<name>` パッケージを実行する規約なので、`pnpm create webview2-bridge <dir>` と短く書けるように、gen の `scaffold` を呼ぶだけの薄いパッケージ `packages/create` を **スコープ無し**で公開する（`@ishibashi0112/` が付くと長い、という要望。名前は 2026-09-13 時点で未使用だった）。gen には `workspace:^` で依存し、版は他の npm と同じ番号で揃えて `pnpm publish:npm` で一緒に公開する（公開済みの版は pnpm がスキップする）。公開パッケージは 3 つになるが、create の中身はほぼ変わらない
 - VS の位置づけを雛形 README に明記: 生成・ビルド・実行は VS 無しで完結する。VS が要るのはフォームデザイナ、GUI デバッガ、旧 .vbproj を含む最終ビルドのときだけ。雛形の MainForm はデザイナを使わずコードで WebView2 を Dock=Fill する
 
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
@@ -388,7 +389,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 2. ~~gen / client 0.2.0 を公開~~（2026-09-06 完了。npm 上の gen は 0.2.0 のみ、client は 0.1.0 と 0.2.0。NuGet は公開しない）
 3. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
 4. 業務画面の 1 枚目を作る: 契約にメソッドを足す → `pnpm gen` → Impl に実装 → React で画面（ブラウザ単体はモックで開発、Windows で実機確認）
-5. 新規アプリは `webview2-bridge-gen init` で始める（2026-09-13 実装、同日 gen / client 0.3.0 として npm 公開済み。雛形 `templates/myapp/` は Windows 実機で起動確認済み）。次は公開版の `pnpm dlx @ishibashi0112/webview2-bridge-gen init <dir> --name <Name>` を Windows で一度確認し、業務画面の 1 枚目へ
+5. 新規アプリは `webview2-bridge-gen init` で始める（2026-09-13 実装、同日 gen / client 0.3.0 として npm 公開済み。雛形 `templates/myapp/` は Windows 実機で起動確認済み）。次は `create-webview2-bridge` 0.3.0 を公開し、公開版の `pnpm create webview2-bridge <dir> --name <Name>` を Windows で一度確認して、業務画面の 1 枚目へ
 
 ### Windows での確認手順（Phase 3 の完了条件。2026-09-06 に確認済み。再確認用に残す）
 1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`

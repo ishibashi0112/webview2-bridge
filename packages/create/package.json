@@ -1,0 +1,56 @@
+{
+  "name": "create-webview2-bridge",
+  "version": "0.3.0",
+  "description": "Scaffold a WinForms (VB.NET / .NET Framework 4.8) + WebView2 + Vite/React app wired with webview2-bridge: `pnpm create webview2-bridge my-app`",
+  "keywords": [
+    "webview2",
+    "winforms",
+    "vb.net",
+    "react",
+    "vite",
+    "scaffold",
+    "create"
+  ],
+  "license": "MIT",
+  "author": "ishibashi0112",
+  "homepage": "https://github.com/ishibashi0112/webview2-bridge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishibashi0112/webview2-bridge.git",
+    "directory": "packages/create"
+  },
+  "bugs": "https://github.com/ishibashi0112/webview2-bridge/issues",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "bin": {
+    "create-webview2-bridge": "./src/cli.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "bin": {
+      "create-webview2-bridge": "./dist/cli.js"
+    }
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@ishibashi0112/webview2-bridge-gen": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

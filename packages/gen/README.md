@@ -23,7 +23,7 @@ Requires Node.js 20.19+ and zod 4.
 ## Start a new app
 
 ```sh
-pnpm dlx @ishibashi0112/webview2-bridge-gen init my-app --name MyInventory
+pnpm create webview2-bridge my-app --name MyInventory      # = pnpm dlx @ishibashi0112/webview2-bridge-gen init my-app --name MyInventory
 cd my-app && pnpm install && pnpm gen:check
 ```
 

@@ -1,11 +1,12 @@
 # リリース手順（npm / NuGet）
 
-公開するのは npm の 2 つ。アプリ固有のもの（`contract/`、`apps/web`、`WebView2Bridge.Contract`、`Impl`、`Host`）は公開しない。
+公開するのは npm の 3 つ。アプリ固有のもの（`contract/`、`apps/web`、`WebView2Bridge.Contract`、`Impl`、`Host`）は公開しない。
 
 | 種類 | 名前 | 元 | 状態 |
 |---|---|---|---|
 | npm | `@ishibashi0112/webview2-bridge-gen` | `packages/gen`（VB ランタイムのコピー `vb-runtime/` を同梱） | 公開中 |
 | npm | `@ishibashi0112/webview2-bridge-client` | `packages/client` | 公開中 |
+| npm | `create-webview2-bridge` | `packages/create`（`pnpm create webview2-bridge` の入口。gen に `workspace:^` で依存） | 公開中 |
 | NuGet | `WebView2Bridge.Runtime` | `dotnet/WebView2Bridge.Runtime` | **保留**（pack できる状態は維持。必要になったら公開） |
 | NuGet | `WebView2Bridge.WinForms` | `dotnet/WebView2Bridge.WinForms` | **保留**（同上） |
 
@@ -23,7 +24,7 @@ NuGet を公開するのは、アプリが増えてランタイムを DLL で共
 
 ## 1. バージョンを上げる
 
-2 か所。npm 2 つと `WebView2BridgeVersion` は同じ番号で揃える（0.x 系。修正はパッチ版、機能追加はマイナー版）。
+npm 3 つと `WebView2BridgeVersion` は同じ番号で揃える（0.x 系。修正はパッチ版、機能追加はマイナー版）。
 VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`）や雛形（`templates/myapp`）を直したときも gen の番号を上げる（gen がコピーを同梱しているため）。
 `templates/myapp/package.json` と `templates/myapp/web/package.json` の gen / client の版も同じ番号にする（`init.test.ts` が一致を検証する）。
 版を上げたら `pnpm gen:template` で雛形の生成物を作り直す（ランタイムのヘッダに gen の版が入るため。`templates/myapp` で一度 `pnpm install` 済みであること）。
@@ -33,6 +34,7 @@ VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`
 # npm（packages/gen と packages/client の "version"。手で編集してもよい）
 (cd packages/gen    && npm version 0.1.1 --no-git-tag-version)
 (cd packages/client && npm version 0.1.1 --no-git-tag-version)
+(cd packages/create && npm version 0.1.1 --no-git-tag-version)
 
 # NuGet（dotnet/Directory.Build.props の WebView2BridgeVersion。手で編集してもよい）
 sed -i '' 's|<WebView2BridgeVersion>.*</WebView2BridgeVersion>|<WebView2BridgeVersion>0.1.1</WebView2BridgeVersion>|' dotnet/Directory.Build.props
@@ -49,7 +51,8 @@ dotnet build dotnet/WebView2Bridge.sln && dotnet test dotnet/WebView2Bridge.Cont
 ## 3. 公開
 
 ```sh
-# npm（build は prepublishOnly で走り、dotnet/ の VB ランタイムを vb-runtime/ に同期してから dist を作る。--dry-run で中身を確認できる）
+# npm（build は prepublishOnly で走り、dotnet/ の VB ランタイムと templates/ の雛形を同期してから dist を作る。--dry-run で中身を確認できる。
+#      pnpm -r publish はレジストリに無い版だけを公開するので、一部だけ版が進んでいても同じコマンドでよい）
 pnpm publish:npm
 ```
 
@@ -80,7 +83,7 @@ unzip -l artifacts/nuget/WebView2Bridge.Runtime.0.1.1.nupkg
 
 このリポジトリの中では workspace リンクと ProjectReference を使い続ける（公開版には依存しない）。
 
-**別のアプリから使う場合（npm だけで完結）** — `pnpm dlx @ishibashi0112/webview2-bridge-gen init my-app --name MyInventory` で骨組みを書き出す（雛形は `templates/myapp/`、README に手順あり）。以下は手で組む場合の要点
+**別のアプリから使う場合（npm だけで完結）** — `pnpm create webview2-bridge my-app --name MyInventory` で骨組みを書き出す（雛形は `templates/myapp/`、README に手順あり）。以下は手で組む場合の要点
 
 `pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` を置く（pnpm 11 は esbuild の postinstall を既定で止めるため。無いと gen が動かない）。
 

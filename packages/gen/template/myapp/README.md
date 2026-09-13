@@ -1,7 +1,7 @@
 # MyApp — webview2-bridge を使う新規アプリの雛形
 
 公開済みの npm（`@ishibashi0112/webview2-bridge-gen` / `-client`）だけで成立する最小構成。
-`pnpm dlx @ishibashi0112/webview2-bridge-gen init <dir> --name <AppName>` がこのフォルダをコピーし、`MyApp` を指定名に置換して書き出す
+`pnpm create webview2-bridge <dir> --name <AppName>`（= `webview2-bridge-gen init`）がこのフォルダをコピーし、`MyApp` を指定名に置換して書き出す
 （手でコピーして `MyApp` を置換しても同じ）。
 NuGet は Newtonsoft.Json と Microsoft.Web.WebView2 の 2 つしか使わない。
 

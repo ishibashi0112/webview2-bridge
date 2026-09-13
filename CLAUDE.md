@@ -5,9 +5,9 @@
 - .NET Framework 4.8 / VB.NET / Newtonsoft.Json / SDK スタイル .vbproj。C# は書かない
 - dotnet/ 配下は netstandard2.0（Runtime, Contract）と net48（WinForms, Impl, Host）。Runtime と Contract は WebView2 に依存させない
   - 例外: `WebView2Bridge.Contract.Tests` は Mac で `dotnet test` するため net8.0（テスト専用）
-- 公開するのは gen / client（npm）。VB ランタイム（Runtime / WinForms）は gen が `vb-runtime/` に同梱して各アプリへ書き出す（NuGet は保留）。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
+- 公開するのは gen / client / create（npm）。VB ランタイム（Runtime / WinForms）は gen が `vb-runtime/` に同梱して各アプリへ書き出す（NuGet は保留）。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
 - `packages/gen/vb-runtime/` は `dotnet/WebView2Bridge.Runtime` と `WebView2Bridge.WinForms` のコピー、`packages/gen/template/myapp/` は `templates/myapp/` のコピー。手で編集せず `pnpm --filter @ishibashi0112/webview2-bridge-gen sync`（`pnpm build` で自動）で同期する。VB ランタイムや雛形を直したら gen のバージョンを上げる
-- 新規アプリの骨組みは `webview2-bridge-gen init <dir> --name <Name>`（リポジトリ内では `pnpm gen init`）。雛形の唯一の正は `templates/myapp/`（プレースホルダは `MyApp` / `myapp`）
+- 新規アプリの骨組みは `pnpm create webview2-bridge <dir> --name <Name>`（= `webview2-bridge-gen init`。リポジトリ内では `pnpm gen init`）。雛形の唯一の正は `templates/myapp/`（プレースホルダは `MyApp` / `myapp`）
 - ランタイム（Dispatcher 等）は別アセンブリなので、生成コードから Partial Class で拡張しない。生成 Dispatcher は `DispatcherExtensions` の拡張メソッド
 - VB は Option Strict On。生成ファイルは手で編集しない（`Generated/` と `apps/web/src/generated/` は `pnpm gen` で全上書き）
 - AddHostObjectToScript は使わない。通信は JSON-RPC over postMessage（HANDOFF.md §5）
@@ -17,7 +17,7 @@
 - 日付は ISO 8601 文字列で往復する。VB 側で JSON を読むときは `JObject.Parse` ではなく `JsonRpc.ParseToken` を使う（Date 自動変換を防ぐ）
 
 ## 名前
-- npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）
+- npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）、`create-webview2-bridge`（packages/create。スコープ無し）
 - 契約: `@webview2-bridge/contract`（contract/、private・非公開）
 - NuGet: `WebView2Bridge.Runtime`（dotnet/WebView2Bridge.Runtime、名前空間 `WebView2Bridge.Runtime`）、`WebView2Bridge.WinForms`（dotnet/WebView2Bridge.WinForms）
 - .NET（アプリ固有）: `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`
