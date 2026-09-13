@@ -13,6 +13,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "gen:check": "tsx packages/gen/src/cli.ts --check",
+    "gen:template": "tsx packages/gen/src/cli.ts --config templates/myapp/webview2-bridge.gen.json",
     "publish:npm": "pnpm -r --filter './packages/*' publish --access public",
     "pack:npm": "pnpm -r --filter './packages/*' exec pnpm pack --pack-destination ../../artifacts/npm"
   },

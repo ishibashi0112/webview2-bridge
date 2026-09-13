@@ -1,6 +1,6 @@
 {
   "name": "@ishibashi0112/webview2-bridge-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Front-end runtime for webview2-bridge: typed JSON-RPC client over WebView2 postMessage (WebView2Transport), in-browser MemoryTransport for development, and zod validation on both ends",
   "keywords": [
     "webview2",

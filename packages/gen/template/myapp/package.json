@@ -10,7 +10,7 @@
     "build:web": "pnpm --filter web build"
   },
   "devDependencies": {
-    "@ishibashi0112/webview2-bridge-gen": "^0.2.0",
+    "@ishibashi0112/webview2-bridge-gen": "^0.3.0",
     "zod": "^4.5.4"
   }
 }

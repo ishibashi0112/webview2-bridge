@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@ishibashi0112/webview2-bridge-client": "^0.2.0",
+    "@ishibashi0112/webview2-bridge-client": "^0.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "zod": "^4.5.4"

@@ -1,6 +1,6 @@
 {
   "name": "@ishibashi0112/webview2-bridge-gen",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "zod contract -> JSON Schema -> TypeScript types + VB.NET DTO / Interface / Dispatcher generator for WinForms (.NET Framework 4.8) + WebView2 + Vite/React apps",
   "keywords": [
     "webview2",

@@ -26,6 +26,8 @@ NuGet を公開するのは、アプリが増えてランタイムを DLL で共
 2 か所。npm 2 つと `WebView2BridgeVersion` は同じ番号で揃える（0.x 系。修正はパッチ版、機能追加はマイナー版）。
 VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`）や雛形（`templates/myapp`）を直したときも gen の番号を上げる（gen がコピーを同梱しているため）。
 `templates/myapp/package.json` と `templates/myapp/web/package.json` の gen / client の版も同じ番号にする（`init.test.ts` が一致を検証する）。
+版を上げたら `pnpm gen:template` で雛形の生成物を作り直す（ランタイムのヘッダに gen の版が入るため。`templates/myapp` で一度 `pnpm install` 済みであること）。
+その後 `pnpm build`（同梱コピーの同期を含む）。雛形の `pnpm install` は新しい版を公開するまで通らないが、それでよい。
 
 ```sh
 # npm（packages/gen と packages/client の "version"。手で編集してもよい）
