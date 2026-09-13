@@ -8,6 +8,12 @@
     <AssemblyName>WebView2Bridge.Host</AssemblyName>
     <MyType>WindowsForms</MyType>
     <StartupObject>WebView2Bridge.Host.Program</StartupObject>
+    <!--
+      AnyCPU のままだと Windows の dotnet build で exe は 64 ビット、WebView2Loader.dll は x86 だけ出力されて
+      起動時に BadImageFormatException になる（SDK が .NET Framework exe に win7-x86 を仮定し、WebView2 の
+      ローダーコピーと食い違う）。x64 に固定して揃える。32 ビット専用の DB ドライバ等が要るなら x86 にする。
+    -->
+    <PlatformTarget>x64</PlatformTarget>
     <!-- Vite の出力（apps/web/dist）。ビルド後に $(OutDir)wwwroot へコピーする -->
     <WebDistDir>$(MSBuildProjectDirectory)\..\..\apps\web\dist</WebDistDir>
   </PropertyGroup>
