@@ -303,6 +303,12 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - 単位の整理: アプリ 1 つ = Host の exe 1 つ = リポジトリ 1 つ（フロントと VB は同じリポジトリに置く。契約が唯一の正で両側へ生成するため）。既存 VB アプリの 1 Form として組み込む形も可
 - 次の候補: 新しいアプリの骨組み（contract.ts、gen.json、3 つの .vbproj、MainForm、web）を置く `webview2-bridge-gen init` コマンド
 
+**新規アプリの雛形 `templates/myapp/`（2026-09-13）**
+- `init` コマンドの前段として、公開版 npm 0.2.0 だけで成立する最小アプリを `templates/myapp/` に置いた（contract 1 メソッド + 1 イベント、web、Contract / Impl / Host の 3 .vbproj、README）。root の pnpm workspace には含めない（`templates/` は `pnpm-workspace.yaml` の `packages` に無い）。コピーして `MyApp` を置換して使う
+- 検証: Mac でテンプレート内 `pnpm install && pnpm gen:check && pnpm build:web` と `dotnet build dotnet/MyApp.sln`（0 警告、wwwroot コピー含む）が通ることを確認。Windows 実機での起動確認は未実施
+- 見つかった落とし穴 2 つを雛形と README / RELEASING.md に反映: (1) pnpm 11 は esbuild の postinstall を止めるので `allowBuilds: { esbuild: true }` が必須、(2) `ts.contractImport` は生成ファイルの場所からの相対パス（`web/src/generated/` なら `../../../contract/contract`）
+- VS の位置づけを雛形 README に明記: 生成・ビルド・実行は VS 無しで完結する。VS が要るのはフォームデザイナ、GUI デバッガ、旧 .vbproj を含む最終ビルドのときだけ。雛形の MainForm はデザイナを使わずコードで WebView2 を Dock=Fill する
+
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 
 ```markdown
@@ -380,6 +386,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 2. ~~gen / client 0.2.0 を公開~~（2026-09-06 完了。npm 上の gen は 0.2.0 のみ、client は 0.1.0 と 0.2.0。NuGet は公開しない）
 3. 以降、会社 PC は公開版を使う。修正はパッチ版を出して番号を上げる
 4. 業務画面の 1 枚目を作る: 契約にメソッドを足す → `pnpm gen` → Impl に実装 → React で画面（ブラウザ単体はモックで開発、Windows で実機確認）
+5. 新規アプリは `templates/myapp/` をコピーして始める（2026-09-13 追加。Windows での起動確認は次回会社 PC で）。テンプレートで足りなくなったら `webview2-bridge-gen init` を検討
 
 ### Windows での確認手順（Phase 3 の完了条件。2026-09-06 に確認済み。再確認用に残す）
 1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`

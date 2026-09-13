@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>MyApp.Host</RootNamespace>
+    <MyType>WindowsForms</MyType>
+    <StartupObject>MyApp.Host.Program</StartupObject>
+    <WebDistDir>$(MSBuildProjectDirectory)\..\..\web\dist</WebDistDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <ProjectReference Include="..\MyApp.Contract\MyApp.Contract.vbproj" />
+    <ProjectReference Include="..\MyApp.Impl\MyApp.Impl.vbproj" />
+  </ItemGroup>
+  <Target Name="CopyWebDist" AfterTargets="Build" Condition="Exists('$(WebDistDir)\index.html')">
+    <ItemGroup><WebDistFiles Include="$(WebDistDir)\**\*" /></ItemGroup>
+    <RemoveDir Directories="$(OutDir)wwwroot" />
+    <Copy SourceFiles="@(WebDistFiles)" DestinationFiles="@(WebDistFiles->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

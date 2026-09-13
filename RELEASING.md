@@ -77,7 +77,9 @@ unzip -l artifacts/nuget/WebView2Bridge.Runtime.0.1.1.nupkg
 
 このリポジトリの中では workspace リンクと ProjectReference を使い続ける（公開版には依存しない）。
 
-**別のアプリから使う場合（npm だけで完結）**
+**別のアプリから使う場合（npm だけで完結）** — 雛形は `templates/myapp/`（README に手順あり）
+
+`pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` を置く（pnpm 11 は esbuild の postinstall を既定で止めるため。無いと gen が動かない）。
 
 ```sh
 pnpm add -D @ishibashi0112/webview2-bridge-gen zod

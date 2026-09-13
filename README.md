@@ -48,3 +48,6 @@ pnpm add -D @ishibashi0112/webview2-bridge-gen zod && pnpm add @ishibashi0112/we
 `webview2-bridge.gen.json` に `vb.namespace`（自分の名前空間）と `vb.runtime.outDir` / `vb.winforms.outDir` を書いて
 `webview2-bridge-gen` を実行すると、契約の生成物に加えて VB ランタイムと WebViewBridge も書き出される。
 VB 側の NuGet 参照は Newtonsoft.Json と Microsoft.Web.WebView2 だけでよい（RELEASING.md 参照）。
+
+**雛形は [templates/myapp](templates/myapp/)**（contract / web / dotnet の 3 プロジェクト / gen.json / README）。コピーして `MyApp` を置換すれば新しいアプリになる。
+pnpm 11 は esbuild（gen が使う tsx の依存）の postinstall を既定で止めるので、新しいアプリの `pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` が必要（雛形には設定済み）。
