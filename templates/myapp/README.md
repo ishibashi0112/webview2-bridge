@@ -82,6 +82,7 @@ VS で開く場合は `dotnet/MyApp.sln` をそのまま開ける（SDK スタ�
 
 ## 注意
 
+- `MyApp.Host.vbproj` の `<PlatformTarget>x64</PlatformTarget>` を消して AnyCPU にしない。Windows の `dotnet build` で WebView2 のローダーが x86 だけになり、起動時に `BadImageFormatException` になる。32 ビット専用の DB ドライバ等が要るなら `x86` にする
 - `pnpm-workspace.yaml` の `allowBuilds: { esbuild: true }` を消さない。pnpm 11 は postinstall を既定で止めるため、無いと gen が動かない
 - `webview2-bridge.gen.json` の `ts.contractImport` は **生成ファイル（web/src/generated/）から見た相対パス**
 - 生成物（`Generated/`、`Runtime/`、`Bridge/`、`web/src/generated/`、`contract.schema.json`）は手で編集しない。コミットはする

@@ -307,6 +307,7 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - `init` コマンドの前段として、公開版 npm 0.2.0 だけで成立する最小アプリを `templates/myapp/` に置いた（contract 1 メソッド + 1 イベント、web、Contract / Impl / Host の 3 .vbproj、README）。root の pnpm workspace には含めない（`templates/` は `pnpm-workspace.yaml` の `packages` に無い）。コピーして `MyApp` を置換して使う
 - 検証: Mac でテンプレート内 `pnpm install && pnpm gen:check && pnpm build:web` と `dotnet build dotnet/MyApp.sln`（0 警告、wwwroot コピー含む）が通ることを確認。Windows 実機での起動確認は未実施
 - 見つかった落とし穴 2 つを雛形と README / RELEASING.md に反映: (1) pnpm 11 は esbuild の postinstall を止めるので `allowBuilds: { esbuild: true }` が必須、(2) `ts.contractImport` は生成ファイルの場所からの相対パス（`web/src/generated/` なら `../../../contract/contract`）
+- **Host は `PlatformTarget` を x64 に固定する（2026-09-13、Windows 実機で判明）**。AnyCPU のままだと Windows の `dotnet build` で SDK が .NET Framework exe に `win7-x86` を仮定し、WebView2 の targets が `runtimes\win-x86` のローダーだけを出力する一方、SDK の後段処理（`GetDefaultPlatformTargetForNetFramework`。`runtimes/win7-x86/` 配下の native 資産しか見ない）が PlatformTarget を AnyCPU に戻すため、exe は 64 ビットで動き、exe 隣に置かれた x86 の `WebView2Loader.dll` を拾って `BadImageFormatException` になる。本体 Host は `WebView2Bridge.WinForms` の ProjectReference 経由で 3 種類のローダーが出力に混ざるため偶然動いていた（テンプレートは WebViewBridge をソースで取り込むので救いがなかった）。Mac 上では RID 推定が走らないので再現しない。x86 専用のドライバが要るアプリは x86 に固定する（AnyCPU には戻さない）
 - VS の位置づけを雛形 README に明記: 生成・ビルド・実行は VS 無しで完結する。VS が要るのはフォームデザイナ、GUI デバッガ、旧 .vbproj を含む最終ビルドのときだけ。雛形の MainForm はデザイナを使わずコードで WebView2 を Dock=Fill する
 
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）

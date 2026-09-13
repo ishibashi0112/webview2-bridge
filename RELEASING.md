@@ -104,6 +104,8 @@ pnpm add @ishibashi0112/webview2-bridge-client zod
 ```xml
 <!-- 契約プロジェクト（netstandard2.0）: Generated/ と Runtime/ は gen が書く -->
 <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+<!-- WinForms ホスト（net48）: Bridge/WebViewBridge.vb は gen が書く。PlatformTarget は x64 か x86 に固定する（AnyCPU だと WebView2Loader.dll が合わず起動時に落ちる） -->
+<PlatformTarget>x64</PlatformTarget>
 <!-- WinForms ホスト（net48）: Bridge/WebViewBridge.vb は gen が書く -->
 <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
 ```
