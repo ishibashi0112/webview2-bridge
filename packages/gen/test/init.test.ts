@@ -2,11 +2,12 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PassThrough, Readable, Writable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bundledName, listTemplateFiles } from "../scripts/sync-template.mjs";
 import type { GenerateConfig } from "../src/generate.js";
 import { generate } from "../src/generate.js";
-import { bundledTemplateDir, defaultAppName, renewProjectGuids, scaffold, validateAppName, TEMPLATE_NAME } from "../src/init.js";
+import { askInitOptions, bundledTemplateDir, defaultAppName, renewProjectGuids, scaffold, validateAppName, TEMPLATE_NAME } from "../src/init.js";
 import { genPackageVersion } from "../src/vb-runtime.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -80,6 +81,13 @@ describe("scaffold", () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it("accepts the placeholder name itself (default for my-app)", async () => {
+    const target = path.join(dir, "my-app");
+    const result = await scaffold({ targetDir: target, name: "MyApp" });
+    expect(result.files).toContain("dotnet/MyApp.Host/MyApp.Host.vbproj");
+    expect(await readFile(path.join(target, "package.json"), "utf8")).toContain('"name": "myapp"');
+  });
+
   it("copies the template and renames MyApp / myapp everywhere", async () => {
     const target = path.join(dir, "inventory-app");
     const result = await scaffold({ targetDir: target, name: "InventoryApp" });
@@ -132,7 +140,7 @@ describe("scaffold", () => {
     expect(() => validateAppName("my-app")).toThrow(/invalid app name/);
     expect(() => validateAppName("1st")).toThrow(/invalid app name/);
     expect(() => validateAppName("My.App")).toThrow(/invalid app name/);
-    expect(() => validateAppName("MyApp")).toThrow(/placeholder/);
+    expect(() => validateAppName("MyApp")).not.toThrow(); // プレースホルダと同名でも置換は無害（my-app の既定名）
   });
 
   it("derives a PascalCase default name from the directory", () => {
@@ -155,5 +163,44 @@ EndGlobal
     expect(out).toContain("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}");
     expect(out).toContain("{22222222-2222-2222-2222-222222222222}");
     expect(out).not.toContain("{11111111-1111-1111-1111-111111111111}");
+  });
+});
+
+describe("askInitOptions", () => {
+  // 端末のように「プロンプトが表示されてから次の 1 行を入力する」疑似入力。
+  // Readable.from で全行を先に流すと、質問を登録する前にストリームが終わって readline が閉じてしまう
+  function io(lines: string[]): { io: { input: Readable; output: Writable }; shown: () => string } {
+    let shown = "";
+    const input = new PassThrough();
+    const pending = [...lines];
+    const output = new Writable({
+      write(chunk, _enc, cb) {
+        shown += String(chunk);
+        if (String(chunk).endsWith(": ")) setImmediate(() => input.write((pending.shift() ?? "") + "\n"));
+        cb();
+      },
+    });
+    return { io: { input, output }, shown: () => shown };
+  }
+
+  it("asks for the directory and the name, accepting defaults with Enter", async () => {
+    const t = io(["", ""]);
+    expect(await askInitOptions({}, t.io)).toEqual({ dir: "my-app", name: "MyApp" });
+    expect(t.shown()).toContain("作成するディレクトリ (my-app)");
+    expect(t.shown()).toContain("アプリ名 / VB の名前空間 (MyApp)");
+  });
+
+  it("asks only for what is missing and re-asks on an invalid name", async () => {
+    const t = io(["my-inventory", "Good"]);
+    expect(await askInitOptions({ dir: "inventory-app" }, t.io)).toEqual({ dir: "inventory-app", name: "Good" });
+    expect(t.shown()).not.toContain("作成するディレクトリ");
+    expect(t.shown()).toContain("invalid app name");
+    expect(t.shown()).toContain("(InventoryApp)");
+  });
+
+  it("returns the given values without asking when both are present", async () => {
+    const t = io([]);
+    expect(await askInitOptions({ dir: "a", name: "B" }, t.io)).toEqual({ dir: "a", name: "B" });
+    expect(t.shown()).toBe("");
   });
 });

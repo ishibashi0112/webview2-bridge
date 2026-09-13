@@ -11,6 +11,7 @@
  */
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import { createInterface } from "node:readline/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GenerateError } from "./schema.js";
@@ -44,9 +45,6 @@ export function validateAppName(name: string): void {
     throw new GenerateError(
       `invalid app name "${name}": use letters, digits and underscores only, starting with a letter (e.g. InventoryApp)`,
     );
-  }
-  if (name === TEMPLATE_NAME) {
-    throw new GenerateError(`app name "${TEMPLATE_NAME}" is the template placeholder; choose another name`);
   }
 }
 
@@ -116,4 +114,43 @@ export function renewProjectGuids(sln: string): string {
     out = out.replaceAll(`{${oldGuid}}`, `{${randomUUID().toUpperCase()}}`);
   }
   return out;
+}
+
+export interface InitPromptIO {
+  input: NodeJS.ReadableStream;
+  output: NodeJS.WritableStream;
+}
+
+/**
+ * 引数で足りないもの（ディレクトリ名・アプリ名）を対話で聞く。
+ * 呼び出し側が stdin が TTY のときだけ使う（CI や非対話では usage / 既定値にする）。
+ * アプリ名は空 Enter で既定値（ディレクトリ名の PascalCase）、不正なら聞き直す。
+ */
+export async function askInitOptions(
+  given: { dir?: string | undefined; name?: string | undefined },
+  io: InitPromptIO = { input: process.stdin, output: process.stdout },
+): Promise<{ dir: string; name: string }> {
+  const rl = createInterface({ input: io.input, output: io.output });
+  try {
+    let dir = given.dir;
+    while (dir === undefined || dir.trim() === "") {
+      const answer = (await rl.question("作成するディレクトリ (my-app): ")).trim();
+      dir = answer === "" ? "my-app" : answer;
+    }
+    let name = given.name;
+    while (name === undefined) {
+      const fallback = defaultAppName(path.basename(path.resolve(dir)));
+      const answer = (await rl.question(`アプリ名 / VB の名前空間 (${fallback}): `)).trim();
+      const candidate = answer === "" ? fallback : answer;
+      try {
+        validateAppName(candidate);
+        name = candidate;
+      } catch (e) {
+        io.output.write(`${(e as Error).message}\n`);
+      }
+    }
+    return { dir, name };
+  } finally {
+    rl.close();
+  }
 }

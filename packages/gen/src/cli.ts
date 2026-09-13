@@ -14,7 +14,7 @@ generate（既定）:
   --cwd     設定ファイル内の相対パスの基準（既定: 設定ファイルのあるディレクトリ）
   --check   書き込まず、生成物が最新かだけを確認する（差分があれば exit 1）
 
-init: 新規アプリの骨組み（contract / web / dotnet の 3 プロジェクト）を <dir> に書き出す
+init: 新規アプリの骨組み（contract / web / dotnet の 3 プロジェクト）を <dir> に書き出す。端末で <dir> や --name を省くと対話で聞く
   --name    アプリ名（PascalCase。VB の名前空間・プロジェクト名になる。既定: <dir> の名前から生成）
   --force   <dir> にファイルがあっても書き込む`);
   process.exit(2);
@@ -74,9 +74,13 @@ async function runInit(argv: string[]): Promise<number> {
       usage();
     }
   }
+  const { scaffold, askInitOptions, defaultAppName } = await import("./init.js");
+  // 端末から対話で使っているときは、足りないもの（ディレクトリ名・アプリ名）を聞く。パイプや CI では聞かない
+  if (process.stdin.isTTY === true && (dir === undefined || name === undefined)) {
+    ({ dir, name } = await askInitOptions({ dir, name }));
+  }
   if (dir === undefined) usage();
 
-  const { scaffold, defaultAppName } = await import("./init.js");
   const targetDir = path.resolve(dir);
   const appName = name ?? defaultAppName(path.basename(targetDir));
   const result = await scaffold({ targetDir, name: appName, force });

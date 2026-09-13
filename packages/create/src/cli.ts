@@ -6,13 +6,13 @@
  * 中身は @ishibashi0112/webview2-bridge-gen の scaffold を呼ぶだけ。
  */
 import path from "node:path";
-import { scaffold, defaultAppName } from "@ishibashi0112/webview2-bridge-gen/generate";
+import { scaffold, askInitOptions, defaultAppName } from "@ishibashi0112/webview2-bridge-gen/generate";
 
 function usage(): never {
   console.error(`Usage: pnpm create webview2-bridge <dir> [--name <AppName>] [--force]
        npm  create webview2-bridge <dir> [--name <AppName>] [--force]
 
-  <dir>     新規アプリを書き出すディレクトリ
+  <dir>     新規アプリを書き出すディレクトリ（端末では <dir> や --name を省くと対話で聞く）
   --name    アプリ名（PascalCase。VB の名前空間・プロジェクト名になる。既定: <dir> の名前から生成）
   --force   <dir> にファイルがあっても書き込む`);
   process.exit(2);
@@ -35,6 +35,10 @@ export async function main(argv: string[]): Promise<number> {
       console.error(`Unexpected argument: ${a}`);
       usage();
     }
+  }
+  // 端末から対話で使っているときは、足りないもの（ディレクトリ名・アプリ名）を聞く。パイプや CI では聞かない
+  if (process.stdin.isTTY === true && (dir === undefined || name === undefined)) {
+    ({ dir, name } = await askInitOptions({ dir, name }));
   }
   if (dir === undefined) usage();
 
