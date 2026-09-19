@@ -28,7 +28,7 @@ pnpm create webview2-bridge my-app --name MyInventory      # = pnpm dlx @ishibas
 cd my-app && pnpm install && pnpm gen:check
 ```
 
-`init` writes a complete skeleton (31 files): the zod contract, a Vite + React app with a mock transport,
+`init` writes a complete skeleton (32 files): the zod contract, a Vite + React app with a mock transport,
 and three VB.NET projects (`<Name>.Contract` netstandard2.0, `<Name>.Impl` net48, `<Name>.Host` WinForms net48)
 including the generated code and the bundled VB runtime. `--name` becomes the VB namespace / project names
 (PascalCase; defaults to the directory name). The generated README walks through the dev loop and the Windows checks.

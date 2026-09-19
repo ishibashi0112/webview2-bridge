@@ -12,6 +12,7 @@ myapp/
   webview2-bridge.gen.json     # ジェネレータ設定（出力先・名前空間）
   contract/contract.ts         # zod による契約（唯一の正）。手で書く
   contract/contract.schema.json# 生成
+  contract/openapi.json        # 生成（同じ契約を HTTP API として提供するときの OpenAPI 3.1。将来サーバーを VB 以外に移すための入力）
   web/                         # Vite + React。src/bridge.ts（transport 選択とモック）と src/main.tsx を手で書く
     src/generated/             # 生成（TS 型）
   dotnet/
@@ -38,7 +39,7 @@ myapp/
 
 ```sh
 pnpm install          # esbuild の postinstall 許可は pnpm-workspace.yaml に設定済み
-pnpm gen              # contract.ts → schema → TS 型 / VB 生成物 / VB ランタイム / WebViewBridge（10 ファイル）
+pnpm gen              # contract.ts → schema → TS 型 / OpenAPI / VB 生成物 / VB ランタイム / WebViewBridge（11 ファイル）
 pnpm dev              # http://localhost:5173 をブラウザで開く。MemoryTransport のモックで動く
 ```
 
