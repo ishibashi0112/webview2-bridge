@@ -39,7 +39,20 @@ const off = client.events.on("progress", (p) => console.log(p.percent)); // host
 |---|---|
 | `WebView2Transport` | inside the WinForms host (`window.chrome.webview`). Wire format: JSON-RPC 2.0 over `postMessage` / `PostWebMessageAsJson` |
 | `MemoryTransport<C>(handlers, { delay })` | plain browser / tests. Handlers are typed from the contract: `{ parts: { search: async (input, { emit }) => output } }`; `emit("progress", payload)` simulates host events. Handler exceptions become `-32000` errors like on the VB side |
-| your own | implement `Transport { call(method, params); on(method, handler) }` (e.g. msw / http) and add it to `selectTransport` factories |
+| `HttpTransport({ baseUrl, headers?, credentials?, timeoutMs?, events? })` | a server that implements the contract over HTTP (the `openapi.json` the generator emits): `POST <baseUrl>/<namespace>/<method>` with the input as JSON body; 4xx/5xx bodies carrying `{ code, message, data }` become `BridgeError` with that code. Events are read from `GET <baseUrl>/events` (Server-Sent Events, connected on the first `on()`, reconnecting after `retryMs`); pass `events: false` if the server has none. `headers` may be a function (e.g. to attach a fresh token) and applies to the event stream too |
+| your own | implement `Transport { call(method, params); on(method, handler) }` (e.g. msw) and add it to `selectTransport` factories |
+
+Switching a UI from the WinForms host to an HTTP server is therefore a transport change only:
+
+```ts
+const { transport } = selectTransport({
+  mode: import.meta.env.VITE_TRANSPORT,   // "http"
+  factories: {
+    memory: () => new MemoryTransport(handlers),
+    http: () => new HttpTransport({ baseUrl: import.meta.env.VITE_HTTP_BASE_URL ?? "/api" }),
+  },
+});
+```
 
 Protocol details and the VB.NET side (`WebView2Bridge.Runtime`, `WebView2Bridge.WinForms` on NuGet) are documented in the repository.
 

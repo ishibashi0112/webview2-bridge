@@ -6,7 +6,8 @@ and generate both sides.
 
 ```
 contract.ts (zod)  ──>  contract.schema.json  ──>  contract-types.ts   (TypeScript, for the UI)
-                                               └─>  Dto.vb / Interfaces.vb / Dispatcher.Generated.vb / Events.vb   (VB.NET)
+                                               ├─>  Dto.vb / Interfaces.vb / Dispatcher.Generated.vb / Events.vb   (VB.NET)
+                                               └─>  openapi.json   (OpenAPI 3.1, optional: the same contract served over HTTP)
 ```
 
 The front-end runtime is [`@ishibashi0112/webview2-bridge-client`](https://www.npmjs.com/package/@ishibashi0112/webview2-bridge-client);
@@ -68,7 +69,8 @@ export type Contract = typeof contract;
   "contract": "contract/contract.ts",
   "schemaOut": "contract/contract.schema.json",
   "ts": { "outDir": "apps/web/src/generated", "contractImport": "@webview2-bridge/contract" },
-  "vb": { "outDir": "dotnet/MyApp.Contract/Generated", "namespace": "MyApp.Contract" }
+  "vb": { "outDir": "dotnet/MyApp.Contract/Generated", "namespace": "MyApp.Contract" },
+  "openapi": { "out": "contract/openapi.json" }   // optional
 }
 ```
 
@@ -94,6 +96,19 @@ Commit the generated files.
 | `Interfaces.vb` | `Public Interface IPartsApi` with `Function Search(req As PartsSearchRequest) As Task(Of PartsSearchResponse)` |
 | `Dispatcher.Generated.vb` | `DispatcherExtensions.Register(dispatcher, api)` extension methods wiring `"parts.search"` to `IPartsApi.Search` |
 | `Events.vb` | `BridgeEvents` with `Sub Progress(payload As ProgressEvent)` emitting `"event.progress"` |
+
+**OpenAPI 3.1** (`openapi.json`, when `openapi.out` is set): the same contract as an HTTP API, so the VB host can later be
+replaced by any server without touching the UI (the client runtime's `HttpTransport` speaks this shape):
+
+| Contract | HTTP |
+|---|---|
+| method `parts.search` | `POST /parts/search`, request body = input, `200` body = output (plain JSON, no JSON-RPC envelope) |
+| error | `400` (-32602 / -32600 / -32700), `404` (-32601), `500` (-32000 and other codes); body = JSON-RPC error object `{ code, message, data }` |
+| events | `GET /events` as Server-Sent Events; each `data:` line is one JSON-RPC notification `{ "jsonrpc": "2.0", "method": "event.progress", "params": {...} }` |
+| `.meta({ id })` schemas, `<Ns><Method>Request` / `Response`, `<Name>Event` | `components/schemas` under the same names as the VB DTOs |
+
+Options: `title`, `version` (of the contract, `info`), `servers` (default `["/"]`), `basePath` (prefix for every path, default `""`),
+`eventsPath` (default `"/events"`, `false` to omit). Authentication is deliberately not part of the contract (`security: []`).
 
 Type mapping: `string`→`String`, `number`→`Double`, `int`→`Integer` (`.meta({ format: "int64" })`→`Long`), `boolean`→`Boolean`,
 `array`→`List(Of T)`, `record`→`Dictionary(Of String, T)`, `unknown`→`JToken`, `X | null`→nullable, optional value types→`Nullable(Of T)`.

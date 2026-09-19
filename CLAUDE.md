@@ -14,6 +14,7 @@
 - Microsoft.VisualBasic.Compatibility 名前空間は使わない
 - フロントは Vite + React + TS、pnpm。localStorage 等は使わない
 - 既存の旧スタイル .vbproj には触らない（このリポジトリには含めない）
+- 契約は HTTP にも写せる形を保つ（HANDOFF.md §10「HTTP / OpenAPI」）: `pnpm gen` が `contract/openapi.json` を生成し、client の `HttpTransport` がその形で話す。画面のコードに fetch を直接書かない。イベントは補助通知に留め、業務の正しさをイベントに依存させない
 - 日付は ISO 8601 文字列で往復する。VB 側で JSON を読むときは `JObject.Parse` ではなく `JsonRpc.ParseToken` を使う（Date 自動変換を防ぐ）
 
 ## 名前

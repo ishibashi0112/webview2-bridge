@@ -5,6 +5,10 @@
     "outDir": "apps/web/src/generated",
     "contractImport": "@webview2-bridge/contract"
   },
+  "openapi": {
+    "out": "contract/openapi.json",
+    "title": "webview2-bridge sample contract"
+  },
   "vb": {
     "outDir": "dotnet/WebView2Bridge.Contract/Generated",
     "namespace": "WebView2Bridge.Contract"

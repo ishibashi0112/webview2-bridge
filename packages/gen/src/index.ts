@@ -3,6 +3,7 @@
 export { defineContract, type ContractDef, type MethodDef, type NamespaceDef } from "./define.js";
 export { toSchema } from "./to-schema.js";
 export { emitTs, type EmitTsOptions } from "./emit-ts.js";
+export { emitOpenApi, type EmitOpenApiOptions } from "./emit-openapi.js";
 export { emitVb, type EmitVbOptions } from "./emit-vb.js";
 export type { EmittedFile } from "./emitted.js";
 export { GenerateError, type ContractSchema, type JsonSchema, type MethodSchema } from "./schema.js";
