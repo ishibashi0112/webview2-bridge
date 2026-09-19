@@ -394,7 +394,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 | 1 契約とジェネレータ | 完了 | `pnpm gen` / `pnpm gen:check`、Vitest（gen 18 件、スナップショット含む）、生成 VB を含む Contract のビルド |
 | 2 フロント側ランタイムと Vite アプリ | 完了 | Vitest（client 19 件）、`pnpm typecheck`、`pnpm --filter web build`、dev サーバーをヘッドレス Chromium で開き MemoryTransport で検索結果・progress イベント・入力検証エラー・-32000 エラーの表示を確認 |
 | 3 VB ランタイムとホスト | **完了（2026-09-06 Windows 実機確認済み）** | Windows 11 で `dotnet build dotnet/WebView2Bridge.sln`（6 プロジェクト）と `dotnet test` 16 件。`WEBVIEW2_BRIDGE_DEV_URL` で dev サーバー接続: バッジ `transport: webview2`、`m6` で VB スタブの 3 件と progress 0/50/100% を受信、`error` で `-32000 Simulated failure`（`System.InvalidOperationException`）、F12 で DevTools。環境変数なし: `https://app.local/index.html` から `wwwroot` が配信され同じく `webview2` で動作 |
-| 4 切り出し | **完了。npm 3 つ（gen / client / create-webview2-bridge）を 0.3.1 で公開済み（2026-09-13。init / create コマンド、対話入力、PlatformTarget x64 固定）。0.4.0（OpenAPI 出力、HttpTransport、雛形に http ファクトリ）も 2026-09-19 に公開済み。NuGet は保留** | レジストリの gen 0.2.0 / client 0.2.0 だけを入れた新規アプリで CLI が VB ランタイム込みの 10 ファイルを生成することを確認。tgz 版では NuGet を Newtonsoft.Json と Microsoft.Web.WebView2 のみでビルドできることも確認済み。手順は RELEASING.md |
+| 4 切り出し | **完了。npm 3 つ（gen / client / create-webview2-bridge）を 0.3.0 で公開（2026-09-13。init / create コマンド、PlatformTarget x64 固定。0.3.1 は client のみ公開されていた、既知の注意点参照）。0.4.0（OpenAPI 出力、HttpTransport、雛形に http ファクトリ）も 2026-09-19 に公開済み。NuGet は保留** | レジストリの gen 0.2.0 / client 0.2.0 だけを入れた新規アプリで CLI が VB ランタイム込みの 10 ファイルを生成することを確認。tgz 版では NuGet を Newtonsoft.Json と Microsoft.Web.WebView2 のみでビルドできることも確認済み。手順は RELEASING.md |
 
 ### 経緯
 - 2026-09-05 に Mac ローカルの Claude Code で Phase 0〜3 のコードを作成（この版）。同日、別セッション（Claude Code on the web）でも HANDOFF.md だけの状態から同じ Phase 0〜3 を `wvbridge` 名で実装して main に入れたが、Mac 版のほうが完成度が高い（optional プロパティの `NullValueHandling.Ignore`、`Namespace Global.`、record / unknown 対応、VS デザイナ対応、LocalAppData のユーザーデータ等）ため **Mac 版を main に採用**した。wvbridge 版はブランチ `claude/progress-and-remaining-tasks-kv24ls` の履歴に残っている（参照用。今後は使わない）
@@ -417,6 +417,9 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 6. 問題が出たらエラーをそのまま Claude Code に貼って修正する（`MainForm.vb` / `WebViewBridge.vb` が疑わしい箇所の中心）
 
 ### 既知の注意点
+- **pnpm 11 の `minimumReleaseAge`（既定 1440 分 = 24 時間）**: `pnpm create webview2-bridge` や `pnpm install` は、公開から 24 時間経っていない版を黙って避け、条件を満たす一番新しい版を使う。2026-09-19 に会社 PC と Mac で `pnpm create webview2-bridge`（版指定なし）を実行したところ、同日公開の 0.4.0 ではなく 0.3.0 が動き、対話入力が無い旧 usage が表示された（0.3.0 には対話入力が無い。Mac の pty で再現し、`pnpm create webview2-bridge@0.4.0` なら対話入力まで動くことを確認）。**公開当日に試すときは版を明示する**（`pnpm create webview2-bridge@0.4.0 my-app`）。翌日以降は版指定なしでよい。版を明示した場合や、依存の版が新しい場合は pnpm が `pnpm-workspace.yaml` に `minimumReleaseAgeExclude` を自動追記する（雛形には残さない）
+- **pnpm の「Choose which packages to build」プロンプト**: `pnpm create` / `pnpm dlx` の実行時に、依存の esbuild（gen → tsx → esbuild）のビルド許可を聞かれる。init は tsx / esbuild を使わないので、何も選ばず Enter で進めてよい（「All packages were added to allowBuilds with value false」と出るが問題ない）。作ったアプリ側の `pnpm install` は雛形の `pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` があるので聞かれない
+- **npm 上の版の実態**（2026-09-19 に `npm view <pkg> versions` で確認）: gen は 0.2.0 / 0.3.0 / 0.4.0、create は 0.3.0 / 0.4.0、client は 0.1.0〜0.3.1 / 0.4.0。**gen と create の 0.3.1 は公開されていない**（0.3.1 の publish は client だけ成功していた。§10 の「0.3.1 公開済み」は client のみが正しい）。0.4.0 で 3 つとも揃ったので実害は無いが、公開後は 3 パッケージの `npm view <pkg> versions` を確認する（RELEASING.md 手順 3 に追記）
 - `WebView2Bridge.Contract.Tests` は net8.0。VS 2022 17.8 以降なら .NET 8 SDK が同梱されている。無ければ sln から一時的に外す
 - `package.json` の `packageManager` は pnpm 11 系。Corepack が有効なら初回にダウンロード確認が出る（Enter で続行）
 - Linux（Ubuntu ディストリ版の .NET SDK）で Host までビルドするには Microsoft ビルドの SDK（`Microsoft.NET.Sdk.WindowsDesktop` 同梱）が別途必要。Mac の公式インストーラ版と Windows は不要

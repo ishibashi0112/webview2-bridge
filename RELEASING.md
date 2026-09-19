@@ -69,6 +69,16 @@ dotnet nuget push "artifacts/nuget/*.0.1.1.nupkg" --api-key "$NUGET_API_KEY" --s
 
 nuget.org は検証に数分かかる（インデックス反映まで restore できないことがある）。
 
+公開後、3 パッケージとも新しい版が載ったことを確認する（0.3.1 のとき client だけ公開され gen / create が抜けていたことがある）:
+
+```sh
+for p in @ishibashi0112/webview2-bridge-gen @ishibashi0112/webview2-bridge-client create-webview2-bridge; do npm view $p version; done
+```
+
+**公開当日の動作確認は版を明示する。** pnpm 11 は `minimumReleaseAge`（既定 24 時間）で公開直後の版を黙って避け、条件を満たす一番新しい旧版を使う。
+`pnpm create webview2-bridge my-app` は翌日まで前の版で動くので、当日は `pnpm create webview2-bridge@0.4.0 my-app` のように書く
+（作ったアプリの `pnpm install` も同様で、pnpm が `pnpm-workspace.yaml` に `minimumReleaseAgeExclude` を自動追記して通す）。
+
 ## 4. コミットとタグ
 
 ```sh
