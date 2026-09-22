@@ -1,6 +1,6 @@
 {
   "name": "@ishibashi0112/webview2-bridge-test",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Playwright fixtures for testing webview2-bridge apps: launch the WinForms host with CDP, call the contract from tests, verify DB changes via Knex, and emit an AI-ready Markdown report",
   "keywords": [
     "webview2",

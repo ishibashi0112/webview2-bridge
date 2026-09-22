@@ -1,6 +1,6 @@
 {
   "name": "create-webview2-bridge",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Scaffold a WinForms (VB.NET / .NET Framework 4.8) + WebView2 + Vite/React app wired with webview2-bridge: `pnpm create webview2-bridge my-app`",
   "keywords": [
     "webview2",
