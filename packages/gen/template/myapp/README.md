@@ -25,6 +25,8 @@ myapp/
 
 手で書くファイルは 5 つ: `contract.ts`、`bridge.ts`、`main.tsx`、`CustomersApi.vb`、`MainForm.vb`。
 残りは生成物か、一度置いたら触らない設定ファイル。
+自動テストは `e2e/`(screen / api / host の 3 層。[e2e/README.md](e2e/README.md))と `playwright.config.ts`、
+`.env.e2e.example`(テスト DB の接続情報の雛形)。
 
 ## 前提ツール
 
@@ -63,13 +65,26 @@ dotnet build dotnet/MyApp.sln -c Release         # dist を bin/Release/net48/ww
 `bin/Release/net48/MyApp.exe` を起動すると `https://app.local/index.html` から wwwroot が読まれる。
 配布するのは `bin/Release/net48/` 一式（wwwroot を含む）。
 
+## 自動テスト(動作確認をコードで置き換える)
+
+```sh
+pnpm test          # screen: ブラウザ + モックで画面の振る舞い。どこでも走る
+pnpm test:doctor   # 会社 PC の前提確認(初回): ブラウザ / exe の起動と CDP 接続 / テスト DB
+pnpm test:e2e      # api + host: 実 exe の VB を契約経由で呼ぶ / 画面から DB まで通す。Windows のみ。先に dotnet build(Debug)
+pnpm test:all      # 会社 PC で打つ 1 コマンド
+```
+
+結果は `test-results/report.md` に出て、失敗があればクリップボードにもコピーされる(AI チャットに貼る)。
+テストの書き方・観点の読み取り元・DB の設定は [e2e/README.md](e2e/README.md)。VB にテストは書かない(実 exe を TS から動かして確かめる)。
+
 ## 日々のループ（API を 1 つ足す）
 
 1. `contract/contract.ts` にメソッドを足す
 2. `pnpm gen`（CI では `pnpm gen:check`）
 3. `web/src/bridge.ts` のモックに同じメソッドを足し、画面を作る（ブラウザだけで進む）
 4. `dotnet/MyApp.Impl/` に実装を書く。新しい namespace を足したら `MainForm.vb` の `dispatcher.Register(...)` も 1 行足す
-5. Windows で `dotnet run` して実機確認
+5. `e2e/screen/` に画面のテスト、`e2e/api/` に契約メソッドのテストを足す(`pnpm test` はどこでも走る)
+6. Windows で `pnpm test:all`(実機の api / host まで自動で確認)
 
 ## Visual Studio はいつ要るか
 

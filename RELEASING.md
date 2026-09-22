@@ -1,12 +1,13 @@
 # リリース手順（npm / NuGet）
 
-公開するのは npm の 3 つ。アプリ固有のもの（`contract/`、`apps/web`、`WebView2Bridge.Contract`、`Impl`、`Host`）は公開しない。
+公開するのは npm の 4 つ。アプリ固有のもの（`contract/`、`apps/web`、`WebView2Bridge.Contract`、`Impl`、`Host`）は公開しない。
 
 | 種類 | 名前 | 元 | 状態 |
 |---|---|---|---|
 | npm | `@ishibashi0112/webview2-bridge-gen` | `packages/gen`（VB ランタイムのコピー `vb-runtime/` を同梱） | 公開中 |
 | npm | `@ishibashi0112/webview2-bridge-client` | `packages/client` | 公開中 |
 | npm | `create-webview2-bridge` | `packages/create`（`pnpm create webview2-bridge` の入口。gen に `workspace:^` で依存） | 公開中 |
+| npm | `@ishibashi0112/webview2-bridge-test` | `packages/test`（自動テストの部品: Playwright フィクスチャ / DB ヘルパ / レポータ / doctor。雛形が devDependency にする） | 0.5.0 から |
 | NuGet | `WebView2Bridge.Runtime` | `dotnet/WebView2Bridge.Runtime` | **保留**（pack できる状態は維持。必要になったら公開） |
 | NuGet | `WebView2Bridge.WinForms` | `dotnet/WebView2Bridge.WinForms` | **保留**（同上） |
 
@@ -24,9 +25,9 @@ NuGet を公開するのは、アプリが増えてランタイムを DLL で共
 
 ## 1. バージョンを上げる
 
-npm 3 つと `WebView2BridgeVersion` は同じ番号で揃える（0.x 系。修正はパッチ版、機能追加はマイナー版）。
+npm 4 つと `WebView2BridgeVersion` は同じ番号で揃える（0.x 系。修正はパッチ版、機能追加はマイナー版）。
 VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`）や雛形（`templates/myapp`）を直したときも gen の番号を上げる（gen がコピーを同梱しているため）。
-`templates/myapp/package.json` と `templates/myapp/web/package.json` の gen / client の版も同じ番号にする（`init.test.ts` が一致を検証する）。
+`templates/myapp/package.json` と `templates/myapp/web/package.json` の gen / client / test の版も同じ番号にする（`init.test.ts` が一致を検証する）。
 雛形の依存（React / Vite / zod など、`templates/myapp/web/package.json` と `templates/myapp/package.json`）はこのタイミングで最新に上げる。
 キャレット付きなのでマイナー版は利用側の `pnpm install` で自動的に最新になるが、宣言も揃えておく。メジャー版（React 20 / Vite 9 / TypeScript 7 など）は
 雛形で `pnpm build:web` と `dotnet build` が通ることを確かめてから上げる（`npm view <pkg> version` で最新を確認）。
@@ -38,6 +39,7 @@ VB ランタイム（`dotnet/WebView2Bridge.Runtime`、`WebView2Bridge.WinForms`
 (cd packages/gen    && npm version 0.1.1 --no-git-tag-version)
 (cd packages/client && npm version 0.1.1 --no-git-tag-version)
 (cd packages/create && npm version 0.1.1 --no-git-tag-version)
+(cd packages/test   && npm version 0.1.1 --no-git-tag-version)
 
 # NuGet（dotnet/Directory.Build.props の WebView2BridgeVersion。手で編集してもよい）
 sed -i '' 's|<WebView2BridgeVersion>.*</WebView2BridgeVersion>|<WebView2BridgeVersion>0.1.1</WebView2BridgeVersion>|' dotnet/Directory.Build.props

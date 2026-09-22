@@ -5,4 +5,6 @@ interface ImportMetaEnv {
   readonly VITE_TRANSPORT?: string;
   /** VITE_TRANSPORT=http のときの baseUrl（既定 "/api"） */
   readonly VITE_HTTP_BASE_URL?: string;
+  /** "1" なら本番ビルドでもブリッジクライアントを window.__webview2Bridge に公開する(自動テスト用。開発ビルドは常に公開) */
+  readonly VITE_EXPOSE_BRIDGE?: string;
 }

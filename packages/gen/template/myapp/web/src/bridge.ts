@@ -31,3 +31,9 @@ const selected = selectTransport({
 
 export const transportMode = selected.mode;
 export const client = createClient(contract, selected.transport);
+
+// 自動テスト(e2e/api)が契約メソッドを直接呼べるよう、開発ビルドではクライアントを window に公開する。
+// 本番ビルドでは公開しない(VITE_EXPOSE_BRIDGE=1 を付けてビルドしたときだけ公開)
+if (import.meta.env.DEV || import.meta.env.VITE_EXPOSE_BRIDGE === "1") {
+  (window as unknown as Record<string, unknown>)["__webview2Bridge"] = client;
+}

@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "playwright test --project screen",
+    "test:e2e": "playwright test --project api --project host",
+    "test:all": "pnpm test && pnpm test:e2e",
+    "test:doctor": "webview2-bridge-test doctor"
   },
   "dependencies": {
     "@ishibashi0112/webview2-bridge-client": "workspace:*",
@@ -17,6 +21,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@ishibashi0112/webview2-bridge-test": "workspace:*",
+    "@playwright/test": "^1.63.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

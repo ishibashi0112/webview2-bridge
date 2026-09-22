@@ -5,7 +5,7 @@
 - .NET Framework 4.8 / VB.NET / Newtonsoft.Json / SDK スタイル .vbproj。C# は書かない
 - dotnet/ 配下は netstandard2.0（Runtime, Contract）と net48（WinForms, Impl, Host）。Runtime と Contract は WebView2 に依存させない
   - 例外: `WebView2Bridge.Contract.Tests` は Mac で `dotnet test` するため net8.0（テスト専用）
-- 公開するのは gen / client / create（npm）。VB ランタイム（Runtime / WinForms）は gen が `vb-runtime/` に同梱して各アプリへ書き出す（NuGet は保留）。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
+- 公開するのは gen / client / create / test（npm）。VB ランタイム（Runtime / WinForms）は gen が `vb-runtime/` に同梱して各アプリへ書き出す（NuGet は保留）。Contract / Impl / Host / contract / apps はアプリ固有で公開しない
 - `packages/gen/vb-runtime/` は `dotnet/WebView2Bridge.Runtime` と `WebView2Bridge.WinForms` のコピー、`packages/gen/template/myapp/` は `templates/myapp/` のコピー。手で編集せず `pnpm --filter @ishibashi0112/webview2-bridge-gen sync`（`pnpm build` で自動）で同期する。VB ランタイムや雛形を直したら gen のバージョンを上げる
 - 新規アプリの骨組みは `pnpm create webview2-bridge <dir> --name <Name>`（= `webview2-bridge-gen init`。リポジトリ内では `pnpm gen init`）。雛形の唯一の正は `templates/myapp/`（プレースホルダは `MyApp` / `myapp`）
 - ランタイム（Dispatcher 等）は別アセンブリなので、生成コードから Partial Class で拡張しない。生成 Dispatcher は `DispatcherExtensions` の拡張メソッド
@@ -15,10 +15,11 @@
 - フロントは Vite + React + TS、pnpm。localStorage 等は使わない
 - 既存の旧スタイル .vbproj には触らない（このリポジトリには含めない）
 - 契約は HTTP にも写せる形を保つ（HANDOFF.md §10「HTTP / OpenAPI」）: `pnpm gen` が `contract/openapi.json` を生成し、client の `HttpTransport` がその形で話す。画面のコードに fetch を直接書かない。イベントは補助通知に留め、業務の正しさをイベントに依存させない
+- 自動テストは TypeScript だけ（VB にテストは書かない）。3 層 = `e2e/screen`（ブラウザ + MemoryTransport）/ `e2e/api`（実 exe の VB を `bridge.call` で直接）/ `e2e/host`（実 exe を画面操作）。部品は `packages/test`、設計は slnmix の `docs/HANDOFF-testing-2026-09.md`。React の操作・確認する要素には `data-testid="<画面>-<役割>"` を付ける。`bridge.ts` は開発ビルドでクライアントを `window.__webview2Bridge` に公開する（api 層が使う）。apps/web を変えたら `e2e/screen` のテストも直し、`pnpm --filter web test` を通す（Claude Code の完了条件）。api / host は Windows 実機のみ
 - 日付は ISO 8601 文字列で往復する。VB 側で JSON を読むときは `JObject.Parse` ではなく `JsonRpc.ParseToken` を使う（Date 自動変換を防ぐ）
 
 ## 名前
-- npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）、`create-webview2-bridge`（packages/create。スコープ無し）
+- npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）、`create-webview2-bridge`（packages/create。スコープ無し）、`@ishibashi0112/webview2-bridge-test`（packages/test）
 - 契約: `@webview2-bridge/contract`（contract/、private・非公開）
 - NuGet: `WebView2Bridge.Runtime`（dotnet/WebView2Bridge.Runtime、名前空間 `WebView2Bridge.Runtime`）、`WebView2Bridge.WinForms`（dotnet/WebView2Bridge.WinForms）
 - .NET（アプリ固有）: `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`
@@ -26,6 +27,7 @@
 
 ## コマンド
 - `pnpm install` / `pnpm gen` / `pnpm gen:check` / `pnpm -r test` / `pnpm -r typecheck`
+- `pnpm --filter web test`（screen。Mac は初回 `npx playwright install chromium`。Claude Code on the web の環境は Chromium をダウンロードできないので `E2E_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium-1194/chrome-linux/chrome` を付ける）/ `pnpm --filter web test:e2e`（api + host。Windows のみ）/ `pnpm --filter web test:doctor`
 - `pnpm --filter web dev`（http://localhost:5173、MemoryTransport で動く） / `pnpm --filter web build`（→ apps/web/dist）
 - `dotnet build dotnet/WebView2Bridge.Contract` （Mac でも通ること）
 - `dotnet test dotnet/WebView2Bridge.Contract.Tests` （Mac で通ること）
@@ -38,3 +40,4 @@
 1. `pnpm --filter web dev` を起動
 2. `set WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` して `dotnet run --project dotnet/WebView2Bridge.Host`（Debug）
 3. 環境変数なしの確認は `pnpm --filter web build` → `dotnet build dotnet/WebView2Bridge.sln` → exe を起動（`https://app.local/index.html`）
+4. 自動テスト: `pnpm --filter web test:doctor`（ブラウザ / exe の CDP 起動 / DB）→ `pnpm --filter web test:e2e`（api 4 件 + host 2 件。dev サーバーは自動起動）

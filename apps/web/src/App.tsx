@@ -59,38 +59,38 @@ export function App() {
     <main className="app">
       <header>
         <h1>webview2-bridge</h1>
-        <span className={`badge badge-${transportMode}`}>transport: {transportMode}</span>
+        <span className={`badge badge-${transportMode}`} data-testid="transport-badge">transport: {transportMode}</span>
       </header>
 
       <form onSubmit={(e) => void onSubmit(e)} className="search">
         <label>
           keyword
-          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder='空にすると入力検証エラー、"error" でホスト例外' />
+          <input data-testid="search-keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder='空にすると入力検証エラー、"error" でホスト例外' />
         </label>
         <label>
           limit
-          <input value={limit} onChange={(e) => setLimit(e.target.value)} inputMode="numeric" style={{ width: "5em" }} />
+          <input data-testid="search-limit" value={limit} onChange={(e) => setLimit(e.target.value)} inputMode="numeric" style={{ width: "5em" }} />
         </label>
-        <button type="submit" disabled={busy}>
+        <button type="submit" disabled={busy} data-testid="search-submit">
           {busy ? "検索中…" : "parts.search"}
         </button>
       </form>
 
       {progress && (
-        <div className="progress">
+        <div className="progress" data-testid="search-progress">
           <progress value={progress.percent} max={100} /> {progress.percent}% {progress.message}
         </div>
       )}
 
       {error && (
-        <div className="error">
-          <strong>{error.kind}</strong>: {error.message}
+        <div className="error" data-testid="search-error">
+          <strong data-testid="search-error-kind">{error.kind}</strong>: {error.message}
           {error.detail && <pre>{error.detail}</pre>}
         </div>
       )}
 
       {items && (
-        <table>
+        <table data-testid="search-results">
           <thead>
             <tr>
               <th>partNo</th>
@@ -102,7 +102,7 @@ export function App() {
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={4}>該当なし</td>
+                <td colSpan={4} data-testid="search-empty">該当なし</td>
               </tr>
             )}
             {items.map((p) => (
@@ -117,7 +117,7 @@ export function App() {
         </table>
       )}
 
-      <section className="log">
+      <section className="log" data-testid="events-log">
         <h2>events</h2>
         {log.length === 0 ? <p className="muted">（まだ受信なし）</p> : <ul>{log.map((l, i) => <li key={i}>{l}</li>)}</ul>}
       </section>

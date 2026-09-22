@@ -7,10 +7,19 @@
     "gen": "webview2-bridge-gen",
     "gen:check": "webview2-bridge-gen --check",
     "dev": "pnpm --filter web dev",
-    "build:web": "pnpm --filter web build"
+    "build:web": "pnpm --filter web build",
+    "test": "playwright test --project screen",
+    "test:e2e": "playwright test --project api --project host",
+    "test:all": "pnpm test && pnpm test:e2e",
+    "test:doctor": "webview2-bridge-test doctor"
   },
   "devDependencies": {
     "@ishibashi0112/webview2-bridge-gen": "^0.4.0",
+    "@ishibashi0112/webview2-bridge-test": "^0.4.0",
+    "@playwright/test": "^1.63.0",
+    "knex": "^3.3.0",
+    "oracledb": "^7.0.1",
+    "tedious": "^20.0.0",
     "zod": "^4.6.5"
   }
 }

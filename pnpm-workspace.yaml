@@ -6,3 +6,4 @@ packages:
 # esbuild(tsx/vite) のインストール後スクリプトを許可する
 allowBuilds:
   esbuild: true
+  better-sqlite3: true

@@ -13,7 +13,7 @@ const repoRoot = path.resolve(here, "../../..");
 const source = path.join(repoRoot, "templates/myapp");
 const dest = path.resolve(here, "../template/myapp");
 
-export const EXCLUDED_DIRS = new Set(["node_modules", "bin", "obj", "dist", ".vs"]);
+export const EXCLUDED_DIRS = new Set(["node_modules", "bin", "obj", "dist", ".vs", "test-results", "playwright-report"]);
 export const EXCLUDED_FILES = new Set(["pnpm-lock.yaml"]);
 
 /** テンプレート内のファイルを相対パスで列挙する（除外ルール適用済み、ソート済み） */
