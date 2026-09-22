@@ -27,6 +27,8 @@ myapp/
 残りは生成物か、一度置いたら触らない設定ファイル。
 自動テストは `e2e/`(screen / api / host の 3 層。[e2e/README.md](e2e/README.md))と `playwright.config.ts`、
 `.env.e2e.example`(テスト DB の接続情報の雛形)。
+`slnmix.config.json` は [slnmix](https://github.com/ishibashi0112/slnmix)(M365 Copilot 等のチャット AI にコードを渡すパック生成)の設定で、
+`.sln` が `dotnet/` にあってもアプリのルートを基準にパックを作る(`target` と `extraRoots`)。ルートで `npx slnmix` と打つだけでよい。
 
 ## 前提ツール
 

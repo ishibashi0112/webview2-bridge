@@ -339,7 +339,7 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - **`test/host.test.ts` は WinForms ホストの代役としてヘッドレス Chromium を起動する**（`test/fixtures/fake-host.sh` が WebView2 と同じ環境変数を解釈）。本物の CDP 接続 → ページ取得 → `bridge.call` → 終了処理まで Mac / Linux で通る。Windows 実機の確認は `pnpm --filter web test:doctor` と `test:e2e`（**2026-09-22 時点で未実施**。ユーザーが会社 PC で行う）
 - **雛形**: `playwright.config.ts`（ルート）、`e2e/e2e.config.ts`、`e2e/{screen,api,host}/customers.spec.ts`、`e2e/README.md`（テストの型・観点の読み取り元・DB 設定）、`.env.e2e.example`、`.npmrc`（`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`）、scripts `test` / `test:e2e` / `test:all` / `test:doctor`。`main.tsx` の要素に `data-testid`。sync-template は `test-results` / `playwright-report` を除外
 - **Claude Code on the web の環境は Chromium をダウンロードできない**（プロキシで遮断。同梱は chromium-1194 = Playwright 1.56）。`E2E_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium-1194/chrome-linux/chrome` を付ければ Playwright 1.63 でも screen と host.test が動くことを確認済み
-- **未解決（slnmix 側）**: slnmix のルートは `.sln` のあるディレクトリで、雛形は `dotnet/MyApp.sln` に置いているため、`web/` `contract/` `e2e/` がルート外になり extraRoots に入れられない。雛形の `.sln` をルートに移すか slnmix に `root` 設定を足すか、要判断（slnmix 決定ログ 2026-09-12「`.sln` がリポジトリ直下にない構成が実際に出てきたら再検討」の事例）
+- **slnmix との整合（2026-09-22 解決）**: slnmix はルートを `.sln` の場所に固定していたため、雛形（`dotnet/MyApp.sln`）では `web/` `contract/` `e2e/` と `webview2-bridge.gen.json` がルート外になっていた。slnmix 0.16.0 でルートを「`--root` > 入力のディレクトリから上に向かって最初に見つかる `slnmix.config.json` の場所 > 入力のディレクトリ」で決めるようにし、設定に `target` を足した（雛形の `.sln` を動かす案は新規アプリしか直らないため不採用）。雛形は `slnmix.config.json`（`target: "dotnet/MyApp.sln"`、extraRoots `web` / `contract` / `e2e`（kind test））を同梱し、アプリのルートで `npx slnmix` と打つだけで物理パスが `dotnet/MyApp.Impl/X.vb` の形（petari のルートと一致）になる。このリポジトリ自身にも同じ形の `slnmix.config.json` を置いた
 
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 

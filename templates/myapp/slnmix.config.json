@@ -1,0 +1,8 @@
+{
+  "target": "dotnet/MyApp.sln",
+  "extraRoots": [
+    { "path": "web", "kind": "web" },
+    { "path": "contract", "kind": "contract", "include": ["contract.ts", "package.json"] },
+    { "path": "e2e", "kind": "test" }
+  ]
+}
