@@ -5,7 +5,7 @@
  * - `MyApp`（PascalCase）: VB の名前空間・プロジェクト名・アセンブリ名・Form のタイトル・LocalAppData のフォルダ名
  * - `myapp`（小文字）: package.json の name
  * - .sln のプロジェクト GUID は新しく振り直す（プロジェクト種別 GUID は変えない）
- * - `_gitignore` は `.gitignore` に戻す（npm pack が .gitignore を改名するため同梱時は別名）
+ * - `_gitignore` / `_npmrc` は `.gitignore` / `.npmrc` に戻す（npm pack が .gitignore を改名し .npmrc を除外するため同梱時は別名）
  *
  * Node 固有（fs）なので index.ts からは export しない（generate と同じ entry）。
  */
@@ -18,6 +18,9 @@ import { GenerateError } from "./schema.js";
 
 /** テンプレート内のプレースホルダ */
 export const TEMPLATE_NAME = "MyApp";
+
+/** 同梱時に改名したファイルを元の名前に戻す（scripts/sync-template.mjs の BUNDLED_RENAMES の逆） */
+const BUNDLED_RESTORE: Readonly<Record<string, string>> = { _gitignore: ".gitignore", _npmrc: ".npmrc" };
 
 export interface ScaffoldOptions {
   /** 書き出し先ディレクトリ（無ければ作る。既にファイルがあれば force なしではエラー） */
@@ -78,7 +81,7 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
   const rename = (s: string): string => s.replaceAll(TEMPLATE_NAME, name).replaceAll(TEMPLATE_NAME.toLowerCase(), name.toLowerCase());
   const files: string[] = [];
   for (const rel of await listFiles(templateDir)) {
-    const outRel = rename(rel === "_gitignore" ? ".gitignore" : rel);
+    const outRel = rename(BUNDLED_RESTORE[rel] ?? rel);
     let content = rename(await readFile(path.join(templateDir, rel), "utf8"));
     if (outRel.endsWith(".sln")) content = renewProjectGuids(content);
     const target = path.join(targetDir, ...outRel.split("/"));

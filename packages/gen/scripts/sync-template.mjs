@@ -3,7 +3,7 @@
 // `pnpm build` の前に自動で走る。テスト（init.test.ts）がコピーと templates/ の同期を検証する。
 //
 // - node_modules / bin / obj / dist / pnpm-lock.yaml は含めない
-// - `.gitignore` は npm pack が `.npmignore` に改名してしまうので `_gitignore` として同梱し、init が戻す
+// - `.gitignore` は npm pack が `.npmignore` に改名し、`.npmrc` は同梱されないので、`_gitignore` / `_npmrc` として同梱し init が戻す
 import { copyFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,9 +32,12 @@ export function listTemplateFiles(root) {
   return out.sort();
 }
 
-/** 同梱時のファイル名（.gitignore → _gitignore） */
+/** npm pack が改名・除外するファイルの同梱時の名前（.gitignore → _gitignore、.npmrc → _npmrc） */
+export const BUNDLED_RENAMES = { ".gitignore": "_gitignore", ".npmrc": "_npmrc" };
+
+/** 同梱時のファイル名 */
 export function bundledName(rel) {
-  return rel === ".gitignore" ? "_gitignore" : rel;
+  return BUNDLED_RENAMES[rel] ?? rel;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

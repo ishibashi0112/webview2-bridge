@@ -97,6 +97,8 @@ describe("scaffold", () => {
     expect(files).toContain("dotnet/InventoryApp.sln");
     expect(files).toContain(".gitignore");
     expect(files).not.toContain("_gitignore");
+    expect(files).toContain(".npmrc");
+    expect(files).not.toContain("_npmrc");
     for (const rel of files) {
       expect(rel, rel).not.toContain(TEMPLATE_NAME);
       const content = await readFile(path.join(target, rel), "utf8");
