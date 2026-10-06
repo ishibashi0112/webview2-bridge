@@ -4,6 +4,7 @@
 //
 // - node_modules / bin / obj / dist / pnpm-lock.yaml は含めない
 // - `.gitignore` は npm pack が `.npmignore` に改名し、`.npmrc` は同梱されないので、`_gitignore` / `_npmrc` として同梱し init が戻す
+// - `.gitattributes` は npm pack / pnpm pack とも同梱し、npm / pnpm の install でも残るので改名せずそのまま同梱する
 import { copyFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

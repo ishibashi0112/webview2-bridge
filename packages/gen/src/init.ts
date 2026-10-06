@@ -6,6 +6,7 @@
  * - `myapp`（小文字）: package.json の name
  * - .sln のプロジェクト GUID は新しく振り直す（プロジェクト種別 GUID は変えない）
  * - `_gitignore` / `_npmrc` は `.gitignore` / `.npmrc` に戻す（npm pack が .gitignore を改名し .npmrc を除外するため同梱時は別名）
+ *   （`.gitattributes` は pack で消えないのでそのまま同梱・コピーする）
  *
  * Node 固有（fs）なので index.ts からは export しない（generate と同じ entry）。
  */
