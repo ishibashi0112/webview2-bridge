@@ -99,6 +99,11 @@ describe("scaffold", () => {
     expect(files).not.toContain("_gitignore");
     expect(files).toContain(".npmrc");
     expect(files).not.toContain("_npmrc");
+    // 生成物を LF に固定する（Windows の core.autocrlf=true で gen:check が誤検知しないように）
+    expect(files).toContain(".gitattributes");
+    const gitattributes = await readFile(path.join(target, ".gitattributes"), "utf8");
+    expect(gitattributes).toMatch(/^\* text=auto eol=lf$/m);
+    expect(gitattributes).toMatch(/^\*\.png binary$/m);
     for (const rel of files) {
       expect(rel, rel).not.toContain(TEMPLATE_NAME);
       const content = await readFile(path.join(target, rel), "utf8");
