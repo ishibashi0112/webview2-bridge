@@ -102,7 +102,7 @@ VS で開く場合は `dotnet/MyApp.sln` をそのまま開ける（SDK スタ�
 ## 注意
 
 - `MyApp.Host.vbproj` の `<PlatformTarget>x64</PlatformTarget>` を消して AnyCPU にしない。Windows の `dotnet build` で WebView2 のローダーが x86 だけになり、起動時に `BadImageFormatException` になる。32 ビット専用の DB ドライバ等が要るなら `x86` にする
-- `pnpm-workspace.yaml` の `allowBuilds: { esbuild: true }` を消さない。pnpm 11 は postinstall を既定で止めるため、無いと gen が動かない
+- `pnpm-workspace.yaml` の `allowBuilds`（`esbuild: true` / `oracledb: false`）を消さない。pnpm 11 は postinstall を既定で止めるため、`esbuild` を許可しないと gen が動かず、許可も拒否もしていない依存があると `pnpm install` が `ERR_PNPM_IGNORED_BUILDS` で失敗する。ビルドスクリプトを持つ依存を足したら、ここに `true` / `false` を書く
 - `webview2-bridge.gen.json` の `ts.contractImport` は **生成ファイル（web/src/generated/）から見た相対パス**
 - 生成物（`Generated/`、`Runtime/`、`Bridge/`、`web/src/generated/`、`contract.schema.json`）は手で編集しない。コミットはする
 - ランタイムを上げるときは gen のバージョンを上げて `pnpm gen` を再実行する（`Runtime/` と `Bridge/` が更新される）
