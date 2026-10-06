@@ -1,6 +1,9 @@
 packages:
   - web
 
-# gen が使う tsx は esbuild に依存する。pnpm 11 は postinstall を既定で止めるので許可が必要
+# pnpm 11 は依存のインストール時スクリプトを既定で止め、許可も拒否もしていないものがあると install が失敗する。
+# esbuild: gen が使う tsx が依存する。許可が必要
+# oracledb: スクリプトは Thick モード用バイナリの有無を表示するだけ。Thin モード（e2e の DB ヘルパ）では不要なので拒否する
 allowBuilds:
   esbuild: true
+  oracledb: false
