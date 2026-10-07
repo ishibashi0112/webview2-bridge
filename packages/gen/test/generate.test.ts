@@ -29,6 +29,7 @@ function config(): GenerateConfig {
     contract: "contract.ts",
     schemaOut: "contract.schema.json",
     ts: { outDir: "web/generated", contractImport: "../../contract" },
+    markdown: { out: "docs/contract.md" },
     vb: {
       outDir: "dotnet/App.Contract/Generated",
       namespace: "App.Contract",
@@ -46,6 +47,7 @@ describe("generate (with VB runtime output)", () => {
       [
         "contract.schema.json",
         "web/generated/contract-types.ts",
+        "docs/contract.md",
         "dotnet/App.Contract/Generated/Dto.vb",
         "dotnet/App.Contract/Generated/Interfaces.vb",
         "dotnet/App.Contract/Generated/Dispatcher.Generated.vb",
@@ -53,6 +55,7 @@ describe("generate (with VB runtime output)", () => {
         "dotnet/App.Contract/Generated/JsonRpc.vb",
         "dotnet/App.Contract/Generated/Dispatcher.vb",
         "dotnet/App.Contract/Generated/IBridgeEmitter.vb",
+        "dotnet/App.Contract/Generated/IValidatable.vb",
         "dotnet/App.Host/Bridge/WebViewBridge.vb",
       ].sort(),
     );
@@ -65,6 +68,7 @@ describe("generate (with VB runtime output)", () => {
         "Events.vb",
         "IBridgeEmitter.vb",
         "Interfaces.vb",
+        "IValidatable.vb",
         "JsonRpc.vb",
       ].sort(),
     );

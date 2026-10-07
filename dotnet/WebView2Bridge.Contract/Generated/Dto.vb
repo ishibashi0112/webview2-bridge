@@ -10,43 +10,80 @@ Imports System
 Imports System.Collections.Generic
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
+Imports WebView2Bridge.Runtime
 
 Namespace Global.WebView2Bridge.Contract
 
     Public Class Part
-        <JsonProperty("partNo")>
+        Implements IValidatable
+
+        <JsonProperty("partNo", Required:=Required.Always)>
         Public Property PartNo As String
 
-        <JsonProperty("name")>
+        <JsonProperty("name", Required:=Required.Always)>
         Public Property Name As String
 
-        <JsonProperty("qty")>
+        <JsonProperty("qty", Required:=Required.Always)>
         Public Property Qty As Integer
 
-        ''' <summary>ISO 8601。日付は初期は文字列で往復する（HANDOFF.md §10）</summary>
-        <JsonProperty("updatedAt")>
+        ''' <summary>ISO 8601。日付は文字列で往復する（ARCHITECTURE.md「契約の書き方」）</summary>
+        <JsonProperty("updatedAt", Required:=Required.Always)>
         Public Property UpdatedAt As String
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+        End Sub
     End Class
 
     Public Class PartsSearchRequest
-        <JsonProperty("keyword")>
+        Implements IValidatable
+
+        <JsonProperty("keyword", Required:=Required.Always)>
         Public Property Keyword As String
 
-        <JsonProperty("limit", NullValueHandling:=NullValueHandling.Ignore)>
+        <JsonProperty("limit", NullValueHandling:=NullValueHandling.Ignore, Required:=Required.DisallowNull)>
         Public Property Limit As Nullable(Of Integer)
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+            Dim prefix As String = If(String.IsNullOrEmpty(path), String.Empty, path & ".")
+            If Keyword IsNot Nothing Then
+                If Keyword.Length < 1 Then issues.Add(prefix & "keyword" & ": " & "1 文字以上")
+            End If
+        End Sub
     End Class
 
     Public Class PartsSearchResponse
-        <JsonProperty("items")>
+        Implements IValidatable
+
+        <JsonProperty("items", Required:=Required.Always)>
         Public Property Items As List(Of Part) = New List(Of Part)()
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+            Dim prefix As String = If(String.IsNullOrEmpty(path), String.Empty, path & ".")
+            If Items IsNot Nothing Then
+                For i0 As Integer = 0 To Items.Count - 1
+                    If Items(i0) IsNot Nothing Then
+                        Items(i0).Validate(prefix & "items" & "[" & i0.ToString() & "]", issues)
+                    End If
+                Next
+            End If
+        End Sub
     End Class
 
     Public Class ProgressEvent
-        <JsonProperty("percent")>
+        Implements IValidatable
+
+        <JsonProperty("percent", Required:=Required.Always)>
         Public Property Percent As Double
 
-        <JsonProperty("message", NullValueHandling:=NullValueHandling.Ignore)>
+        <JsonProperty("message", NullValueHandling:=NullValueHandling.Ignore, Required:=Required.DisallowNull)>
         Public Property Message As String
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+        End Sub
     End Class
 
 End Namespace

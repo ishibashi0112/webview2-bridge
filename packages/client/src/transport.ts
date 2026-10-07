@@ -13,7 +13,7 @@ export interface ContractShape {
   events: Record<string, z.ZodType>;
 }
 
-// ---------------------------------------------------------------- JSON-RPC 2.0 (HANDOFF.md §5)
+// ---------------------------------------------------------------- JSON-RPC 2.0 (ARCHITECTURE.md「通信プロトコル」)
 
 export type JsonRpcId = string | number;
 

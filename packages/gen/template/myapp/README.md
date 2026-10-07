@@ -14,6 +14,7 @@ myapp/
   contract/contract.ts         # zod による契約（唯一の正）。手で書く
   contract/contract.schema.json# 生成
   contract/openapi.json        # 生成（同じ契約を HTTP API として提供するときの OpenAPI 3.1。将来サーバーを VB 以外に移すための入力）
+  contract/contract.md         # 生成（人と AI が読む契約の仕様書。メソッド / 入出力の項目表 / イベント / エラー）。AI チャットに渡すときは contract.ts とこれと e2e/ を
   web/                         # Vite + React。src/bridge.ts（transport 選択とモック）と src/main.tsx を手で書く
     src/generated/             # 生成（TS 型）
   dotnet/
@@ -44,7 +45,7 @@ myapp/
 
 ```sh
 pnpm install          # esbuild の postinstall 許可は pnpm-workspace.yaml に設定済み
-pnpm gen              # contract.ts → schema → TS 型 / OpenAPI / VB 生成物 / VB ランタイム / WebViewBridge（11 ファイル）
+pnpm gen              # contract.ts → schema → TS 型 / OpenAPI / contract.md / VB 生成物 / VB ランタイム / WebViewBridge（12 ファイル）
 pnpm dev              # http://localhost:5173 をブラウザで開く。MemoryTransport のモックで動く
 ```
 
@@ -106,6 +107,6 @@ VS で開く場合は `dotnet/MyApp.sln` をそのまま開ける（SDK スタ�
 - `MyApp.Host.vbproj` の `<PlatformTarget>x64</PlatformTarget>` を消して AnyCPU にしない。Windows の `dotnet build` で WebView2 のローダーが x86 だけになり、起動時に `BadImageFormatException` になる。32 ビット専用の DB ドライバ等が要るなら `x86` にする
 - `pnpm-workspace.yaml` の `allowBuilds`（`esbuild: true` / `oracledb: false`）を消さない。pnpm 11 は postinstall を既定で止めるため、`esbuild` を許可しないと gen が動かず、許可も拒否もしていない依存があると `pnpm install` が `ERR_PNPM_IGNORED_BUILDS` で失敗する。ビルドスクリプトを持つ依存を足したら、ここに `true` / `false` を書く
 - `webview2-bridge.gen.json` の `ts.contractImport` は **生成ファイル（web/src/generated/）から見た相対パス**
-- 生成物（`Generated/`、`Runtime/`、`Bridge/`、`web/src/generated/`、`contract.schema.json`）は手で編集しない。コミットはする
+- 生成物（`Generated/`、`Runtime/`、`Bridge/`、`web/src/generated/`、`contract.schema.json`、`openapi.json`、`contract.md`）は手で編集しない。コミットはする
 - ランタイムを上げるときは gen のバージョンを上げて `pnpm gen` を再実行する（`Runtime/` と `Bridge/` が更新される）
 - 日付は ISO 8601 文字列で往復する。union / z.date 等は契約に使えない（gen がエラーで止める）

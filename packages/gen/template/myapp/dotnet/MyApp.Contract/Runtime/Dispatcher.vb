@@ -48,8 +48,18 @@ Namespace Global.WebView2Bridge.Runtime
                     End If
                     req = source.ToObject(Of TReq)(_serializer)
                 Catch ex As JsonException
+                    ' 必須の欠落・null 不可への null・型違いは Newtonsoft（JsonProperty の Required）がここで弾く
                     Throw New JsonRpcException(JsonRpcErrorCodes.InvalidParams, "Invalid params: " & ex.Message, ex.GetType().FullName)
                 End Try
+                ' 文字数・範囲・列挙・件数・入れ子の規則は生成 DTO の Validate() で検査する（docs/decisions/2026-10-07-vb-input-validation.md）
+                Dim validatable = TryCast(CObj(req), IValidatable)
+                If validatable IsNot Nothing Then
+                    Dim issues As New List(Of String)()
+                    validatable.Validate(String.Empty, issues)
+                    If issues.Count > 0 Then
+                        Throw New JsonRpcException(JsonRpcErrorCodes.InvalidParams, "Invalid params: " & String.Join("; ", issues), issues)
+                    End If
+                End If
                 Dim result As TRes = Await _handler(req).ConfigureAwait(False)
                 Return result
             End Function
@@ -137,7 +147,7 @@ Namespace Global.WebView2Bridge.Runtime
             Catch ex As JsonRpcException
                 Return If(hasId, JsonRpc.BuildError(id, ex.Code, ex.Message, ex.ErrorData, _serializer), Nothing)
             Catch ex As Exception
-                ' 実装側の未処理例外: -32000、message に例外メッセージ、data に例外型名（HANDOFF.md §5）
+                ' 実装側の未処理例外: -32000、message に例外メッセージ、data に例外型名（ARCHITECTURE.md「通信プロトコル」）
                 Return If(hasId, JsonRpc.BuildError(id, JsonRpcErrorCodes.ServerError, ex.Message, ex.GetType().FullName, _serializer), Nothing)
             End Try
         End Function

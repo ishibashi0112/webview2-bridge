@@ -3,6 +3,7 @@ Option Strict On
 Imports System
 Imports System.Collections.Generic
 Imports System.Threading.Tasks
+Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Imports WebView2Bridge.Contract
 Imports WebView2Bridge.Runtime
@@ -65,13 +66,31 @@ Public Class DispatcherTests
     End Function
 
     <Fact>
-    Public Async Function Missing_Params_Is_Treated_As_Empty_Object() As Task
+    Public Async Function Missing_Params_Is_Treated_As_Empty_Object_So_Required_Properties_Are_Reported() As Task
+        ' params 省略は {} と同じ。keyword は必須なので、生成 DTO の Required.Always が -32602 にする（実装は呼ばれない）
         Dim api As New FakePartsApi()
         Dim res = P(Await Create(api).HandleAsync("{""jsonrpc"":""2.0"",""id"":1,""method"":""parts.search""}"))
-        Assert.Null(res("error"))
-        Assert.NotNull(api.LastRequest)
-        Assert.Null(api.LastRequest.Keyword)
-        Assert.False(api.LastRequest.Limit.HasValue)
+        Assert.Equal(JsonRpcErrorCodes.InvalidParams, res("error").Value(Of Integer)("code"))
+        Assert.Contains("keyword", res("error").Value(Of String)("message"))
+        Assert.Null(api.LastRequest)
+    End Function
+
+    <Fact>
+    Public Async Function Validate_Reports_Contract_Rules_As_InvalidParams() As Task
+        ' keyword は z.string().min(1)。空文字はデシリアライズできるが Validate() が弾く。data に違反の一覧
+        Dim api As New FakePartsApi()
+        Dim res = P(Await Create(api).HandleAsync("{""jsonrpc"":""2.0"",""id"":1,""method"":""parts.search"",""params"":{""keyword"":""""}}"))
+        Assert.Equal(JsonRpcErrorCodes.InvalidParams, res("error").Value(Of Integer)("code"))
+        Assert.Contains("keyword: 1 文字以上", res("error").Value(Of String)("message"))
+        Assert.Equal("keyword: 1 文字以上", CType(res("error")("data"), JArray)(0).Value(Of String)())
+        Assert.Null(api.LastRequest)
+    End Function
+
+    <Fact>
+    Public Async Function Optional_Property_Rejects_Explicit_Null() As Task
+        ' limit は .optional()。zod は null を受け付けないので、VB 側も Required.DisallowNull で -32602
+        Dim res = P(Await Create().HandleAsync("{""jsonrpc"":""2.0"",""id"":1,""method"":""parts.search"",""params"":{""keyword"":""x"",""limit"":null}}"))
+        Assert.Equal(JsonRpcErrorCodes.InvalidParams, res("error").Value(Of Integer)("code"))
     End Function
 
     <Fact>
@@ -170,10 +189,11 @@ Public Class DispatcherTests
     End Sub
 
     <Fact>
-    Public Sub Required_Reference_Properties_Are_Emitted_As_Null()
+    Public Sub Required_Reference_Property_Left_Nothing_Fails_Serialization()
+        ' 契約に合わない応答を黙って出さない。Dispatcher 内なら -32000、Emit なら WebViewBridge が捨ててログに残す
         Dim d = Create()
-        Dim json = d.BuildNotification("x", New Part With {.PartNo = "p"})
-        Assert.Contains("""name"":null", json)
+        Dim ex = Assert.Throws(Of JsonSerializationException)(Sub() d.BuildNotification("x", New Part With {.PartNo = "p"}))
+        Assert.Contains("name", ex.Message)
     End Sub
 
     <Fact>

@@ -80,7 +80,7 @@ describe("bundled template", () => {
         { cwd: bundled, check: true },
       );
       expect(result.stale.map((f) => path.relative(bundled, f))).toEqual([]);
-      expect(result.files.length).toBe(11);
+      expect(result.files.length).toBe(13);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

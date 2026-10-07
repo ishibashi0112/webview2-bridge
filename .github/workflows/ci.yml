@@ -1,4 +1,4 @@
-# 基盤リポジトリの CI。会社のアプリ側には YAML ではなく `pnpm check`(雛形の package.json)を置く(HANDOFF.md §10)。
+# 基盤リポジトリの CI。会社のアプリ側には YAML ではなく `pnpm check`(雛形の package.json)を置く(docs/decisions/2026-10-07-ci-biome-check.md)。
 # node:  生成物の鮮度 / Biome / 型 / Vitest / screen テスト / 公開用ビルドと同梱コピーの同期
 # dotnet: Linux で Contract のビルドと xUnit、Windows で WinForms を含む sln 全体のビルド
 name: CI

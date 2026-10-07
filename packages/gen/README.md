@@ -7,11 +7,13 @@ and generate both sides.
 ```
 contract.ts (zod)  ──>  contract.schema.json  ──>  contract-types.ts   (TypeScript, for the UI)
                                                ├─>  Dto.vb / Interfaces.vb / Dispatcher.Generated.vb / Events.vb   (VB.NET)
-                                               └─>  openapi.json   (OpenAPI 3.1, optional: the same contract served over HTTP)
+                                               ├─>  openapi.json   (OpenAPI 3.1, optional: the same contract served over HTTP)
+                                               └─>  contract.md    (Markdown spec for people and AI assistants, optional)
 ```
 
 The front-end runtime is [`@ishibashi0112/webview2-bridge-client`](https://www.npmjs.com/package/@ishibashi0112/webview2-bridge-client);
-the VB.NET runtime is the NuGet package `WebView2Bridge.Runtime` (plus `WebView2Bridge.WinForms` for the host).
+the VB.NET runtime (`WebView2Bridge.Runtime`, plus `WebView2Bridge.WinForms` for the host) is bundled in this package and
+written into your projects by the generator (see "VB runtime without NuGet"; publishing it on NuGet is on hold).
 
 ## Install
 
@@ -28,7 +30,7 @@ pnpm create webview2-bridge my-app --name MyInventory      # = pnpm dlx @ishibas
 cd my-app && pnpm install && pnpm gen:check
 ```
 
-`init` writes a complete skeleton (33 files): the zod contract, a Vite + React app with a mock transport,
+`init` writes a complete skeleton (45 files): the zod contract, a Vite + React app with a mock transport,
 and three VB.NET projects (`<Name>.Contract` netstandard2.0, `<Name>.Impl` net48, `<Name>.Host` WinForms net48)
 including the generated code and the bundled VB runtime, plus a Biome config and a `pnpm check` script (gen:check, lint,
 typecheck and the screen tests in one command: what your CI, or your pre-commit habit, should run). `--name` becomes the VB namespace / project names
@@ -71,7 +73,8 @@ export type Contract = typeof contract;
   "schemaOut": "contract/contract.schema.json",
   "ts": { "outDir": "apps/web/src/generated", "contractImport": "@webview2-bridge/contract" },
   "vb": { "outDir": "dotnet/MyApp.Contract/Generated", "namespace": "MyApp.Contract" },
-  "openapi": { "out": "contract/openapi.json" }   // optional
+  "openapi": { "out": "contract/openapi.json" },  // optional
+  "markdown": { "out": "contract/contract.md" }   // optional
 }
 ```
 
@@ -89,11 +92,11 @@ Commit the generated files.
 **TypeScript** (`contract-types.ts`): `PartsSearchInput` / `PartsSearchOutput`, `ProgressEvent`, named types (`Part`),
 `MethodMap` / `EventMap`, `methodNames` / `eventNames`. Types are derived from the zod contract with `z.input` / `z.output`.
 
-**VB.NET** (into `Namespace Global.<namespace>`, referencing the `WebView2Bridge.Runtime` NuGet package):
+**VB.NET** (into `Namespace Global.<namespace>`, importing the `WebView2Bridge.Runtime` namespace from the bundled runtime or the NuGet package of the same name):
 
 | File | Content |
 |---|---|
-| `Dto.vb` | one `Public Class` per object with `<JsonProperty("camelCase")>`; string enums as `NotInheritable Class` with `Public Const` |
+| `Dto.vb` | one `Public Class` per object with `<JsonProperty("camelCase", Required:=...)>` mirroring zod's required / optional / nullable (missing or null required values fail deserialization with -32602), and a generated `Validate()` (`IValidatable`) that the dispatcher runs for string length, numeric range, enum membership, item count and nested objects (-32602 with the issues in `data`); string enums as `NotInheritable Class` with `Public Const` |
 | `Interfaces.vb` | `Public Interface IPartsApi` with `Function Search(req As PartsSearchRequest) As Task(Of PartsSearchResponse)` |
 | `Dispatcher.Generated.vb` | `DispatcherExtensions.Register(dispatcher, api)` extension methods wiring `"parts.search"` to `IPartsApi.Search` |
 | `Events.vb` | `BridgeEvents` with `Sub Progress(payload As ProgressEvent)` emitting `"event.progress"` |
@@ -110,6 +113,12 @@ replaced by any server without touching the UI (the client runtime's `HttpTransp
 
 Options: `title`, `version` (of the contract, `info`), `servers` (default `["/"]`), `basePath` (prefix for every path, default `""`),
 `eventsPath` (default `"/events"`, `false` to omit). Authentication is deliberately not part of the contract (`security: []`).
+
+**Markdown** (`contract.md`, when `markdown.out` is set): a specification for people and AI assistants, generated from the same
+schema. Per method: how to call it over JSON-RPC / HTTP / TypeScript / VB.NET and the input / output field tables (name, type,
+required, description, nested objects flattened as `address.line1` / `children[].id`); events; shared `.meta({ id })` types;
+the error-code table; the zod → JSON Schema → TS → VB type mapping. Options: `title`, `basePath`, `eventsPath` (match `openapi`).
+Paste it into a chat assistant together with `contract.ts` and the e2e specs to explain an app without the generated code.
 
 Type mapping: `string`→`String`, `number`→`Double`, `int`→`Integer` (`.meta({ format: "int64" })`→`Long`), `boolean`→`Boolean`,
 `array`→`List(Of T)`, `record`→`Dictionary(Of String, T)`, `unknown`→`JToken`, `X | null`→nullable, optional value types→`Nullable(Of T)`.

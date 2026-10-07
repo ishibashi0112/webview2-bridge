@@ -1,0 +1,20 @@
+Option Strict On
+
+Imports System.Collections.Generic
+
+Namespace Global.WebView2Bridge.Runtime
+
+    ''' <summary>
+    ''' 生成 DTO が実装する、契約の規則（文字数・範囲・列挙・件数・入れ子）の検査。
+    ''' Dispatcher が要求をデシリアライズした直後に呼び、違反が 1 つでもあれば -32602（Invalid params）で応答する
+    ''' （message は違反の一覧、data は違反ごとの文字列の配列）。
+    ''' 必須と null 可否は JsonProperty の Required でデシリアライズ時に検査されるので、ここでは扱わない。
+    ''' 画面側（zod）と同じ規則を VB 側でも守ることで、WebView2 以外の経路（HTTP 等）から来た入力にも契約が効く。
+    ''' </summary>
+    Public Interface IValidatable
+        ''' <param name="path">この DTO の位置。ルートなら空文字、入れ子なら "customer.address" のように</param>
+        ''' <param name="issues">違反を追加する先。"customer.name: 1 文字以上" のように 1 件 1 行</param>
+        Sub Validate(path As String, issues As IList(Of String))
+    End Interface
+
+End Namespace

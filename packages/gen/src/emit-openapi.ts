@@ -23,7 +23,7 @@ const JSON_RPC_ERROR_SCHEMA_NAME = "JsonRpcError";
 /**
  * contract.schema.json → openapi.json（OpenAPI 3.1）
  *
- * HTTP へのマッピング（HANDOFF.md §10 参照）
+ * HTTP へのマッピング（docs/decisions/2026-09-19-http-openapi.md、ARCHITECTURE.md「HTTP で提供する」）
  * - `<ns>.<name>` → `POST /<ns>/<name>`。requestBody = input、200 = output（どちらも JSON、封筒なし）
  * - 失敗は JSON-RPC の error オブジェクト `{ code, message, data }` を body にする。
  *   -32602 / -32600 / -32700 → 400、-32601 → 404、それ以外（-32000 等）→ 500

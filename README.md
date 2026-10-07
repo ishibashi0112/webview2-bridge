@@ -3,7 +3,7 @@
 WinForms (VB.NET / .NET Framework 4.8) + WebView2 + Vite/React の薄いブリッジ基盤。
 zod で書いた契約から TypeScript の型付きクライアントと VB.NET の DTO / Interface / Dispatcher を生成する。
 
-詳細は [HANDOFF.md](HANDOFF.md)（設計・仕様・決定事項・進捗）、[CLAUDE.md](CLAUDE.md)（ルール・コマンド）、[RELEASING.md](RELEASING.md)（公開手順）。
+詳細は [ARCHITECTURE.md](ARCHITECTURE.md)（今の正: 設計・仕様）、[docs/decisions/](docs/decisions/README.md)（設計判断の記録）、[docs/HISTORY.md](docs/HISTORY.md)（経緯・進捗）、[CLAUDE.md](CLAUDE.md)（ルール・コマンド）、[RELEASING.md](RELEASING.md)（公開手順）。[HANDOFF.md](HANDOFF.md) は入口。
 
 ## 構成
 
@@ -15,7 +15,7 @@ zod で書いた契約から TypeScript の型付きクライアントと VB.NET
 | `packages/test` | `@ishibashi0112/webview2-bridge-test` — 自動テストの部品。Playwright フィクスチャ（WinForms ホストを CDP 起動、契約メソッドの直接呼び出し、Knex による DB 前後差分と後片付け）、AI 向け Markdown レポータ、`doctor`（会社 PC の前提確認） | npm |
 | `dotnet/WebView2Bridge.Runtime` | JSON-RPC ランタイム（Dispatcher / JsonRpc / IBridgeEmitter）。netstandard2.0、WebView2 非依存。**gen がコピーを同梱し、各アプリへ書き出す**（NuGet `WebView2Bridge.Runtime` は保留） | npm（gen 経由） |
 | `dotnet/WebView2Bridge.WinForms` | WebView2 コントロールと Dispatcher をつなぐ WebViewBridge。net48。同上（NuGet `WebView2Bridge.WinForms` は保留） | npm（gen 経由） |
-| `contract/contract.ts` | zod による契約定義（唯一の正） | — |
+| `contract/contract.ts` | zod による契約定義（唯一の正）。`pnpm gen` が隣に `contract.schema.json` / `openapi.json` / `contract.md`（人と AI が読む仕様書）を生成する | — |
 | `apps/web` | Vite + React のサンプル UI（ブラウザ単体では MemoryTransport で動く）。`e2e/` に screen / api / host の自動テスト | — |
 | `dotnet/WebView2Bridge.Contract` | このアプリの生成コード（`pnpm gen` の出力先）。Runtime を参照 | — |
 | `dotnet/WebView2Bridge.Impl` | 人間が書く API 実装 | — |
@@ -26,7 +26,7 @@ zod で書いた契約から TypeScript の型付きクライアントと VB.NET
 
 ```sh
 pnpm install
-pnpm gen                     # contract.ts → contract.schema.json → TS / VB を生成（gen:check で差分検査）
+pnpm gen                     # contract.ts → contract.schema.json → TS / VB / openapi.json / contract.md を生成（gen:check で差分検査）
 pnpm test                    # gen / client / test の Vitest + apps/web の screen テスト（Playwright。Mac は初回 npx playwright install chromium）
 pnpm typecheck
 pnpm lint                    # Biome（書式 + lint）。直すのは pnpm lint:fix

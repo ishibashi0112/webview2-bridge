@@ -10,30 +10,63 @@ Imports System
 Imports System.Collections.Generic
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
+Imports WebView2Bridge.Runtime
 
 Namespace Global.MyApp.Contract
 
     Public Class Customer
-        <JsonProperty("id")>
+        Implements IValidatable
+
+        <JsonProperty("id", Required:=Required.Always)>
         Public Property Id As String
 
-        <JsonProperty("name")>
+        <JsonProperty("name", Required:=Required.Always)>
         Public Property Name As String
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+        End Sub
     End Class
 
     Public Class CustomersListRequest
-        <JsonProperty("keyword", NullValueHandling:=NullValueHandling.Ignore)>
+        Implements IValidatable
+
+        <JsonProperty("keyword", NullValueHandling:=NullValueHandling.Ignore, Required:=Required.DisallowNull)>
         Public Property Keyword As String
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+        End Sub
     End Class
 
     Public Class CustomersListResponse
-        <JsonProperty("items")>
+        Implements IValidatable
+
+        <JsonProperty("items", Required:=Required.Always)>
         Public Property Items As List(Of Customer) = New List(Of Customer)()
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+            Dim prefix As String = If(String.IsNullOrEmpty(path), String.Empty, path & ".")
+            If Items IsNot Nothing Then
+                For i0 As Integer = 0 To Items.Count - 1
+                    If Items(i0) IsNot Nothing Then
+                        Items(i0).Validate(prefix & "items" & "[" & i0.ToString() & "]", issues)
+                    End If
+                Next
+            End If
+        End Sub
     End Class
 
     Public Class ProgressEvent
-        <JsonProperty("percent")>
+        Implements IValidatable
+
+        <JsonProperty("percent", Required:=Required.Always)>
         Public Property Percent As Double
+
+        ''' <summary>契約の規則（文字数・範囲・列挙・件数・入れ子）を検査し、違反を issues に積む。必須と null 可否は JsonProperty の Required で検査済み</summary>
+        Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate
+        End Sub
     End Class
 
 End Namespace

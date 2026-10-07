@@ -5,6 +5,7 @@ Imports System.Diagnostics
 Imports System.Windows.Forms
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
+Imports Newtonsoft.Json
 Imports WebView2Bridge.Runtime
 
 Namespace Global.WebView2Bridge.WinForms
@@ -13,7 +14,7 @@ Namespace Global.WebView2Bridge.WinForms
 ''' WebView2 コントロールと Dispatcher をつなぐ。
 '''   Web → Host: WebMessageReceived → Dispatcher.HandleAsync → PostWebMessageAsJson
 '''   Host → Web: Emit(method, payload) → 通知 JSON → PostWebMessageAsJson（UI スレッドへマーシャリング）
-''' AddHostObjectToScript は使わない（HANDOFF.md §5）。
+''' AddHostObjectToScript は使わない（ARCHITECTURE.md「通信プロトコル」）。
 ''' </summary>
 Public NotInheritable Class WebViewBridge
     Implements IBridgeEmitter
@@ -65,7 +66,15 @@ Public NotInheritable Class WebViewBridge
 
     ''' <summary>Host → Web の通知。どのスレッドから呼んでもよい</summary>
     Public Sub Emit(method As String, params As Object) Implements IBridgeEmitter.Emit
-        Dim json As String = _dispatcher.BuildNotification(method, params)
+        Dim json As String = Nothing
+        Try
+            json = _dispatcher.BuildNotification(method, params)
+        Catch ex As JsonException
+            ' ペイロードが契約に合わない（必須の項目が Nothing 等。生成 DTO の Required が直列化時に弾く）。
+            ' イベントは補助通知なので、呼び出し側のスレッドを落とさず捨ててログに残す
+            Debug.WriteLine($"[WebViewBridge] Emit({method}) skipped: {ex.Message}")
+            Return
+        End Try
         Post(json)
     End Sub
 

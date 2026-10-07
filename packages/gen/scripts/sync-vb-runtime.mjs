@@ -10,7 +10,10 @@ const repoRoot = path.resolve(here, "../../..");
 const dest = path.resolve(here, "../vb-runtime");
 
 export const VB_RUNTIME_SOURCES = {
-  runtime: { dir: "dotnet/WebView2Bridge.Runtime", files: ["JsonRpc.vb", "Dispatcher.vb", "IBridgeEmitter.vb"] },
+  runtime: {
+    dir: "dotnet/WebView2Bridge.Runtime",
+    files: ["JsonRpc.vb", "Dispatcher.vb", "IBridgeEmitter.vb", "IValidatable.vb"],
+  },
   winforms: { dir: "dotnet/WebView2Bridge.WinForms", files: ["WebViewBridge.vb"] },
 };
 

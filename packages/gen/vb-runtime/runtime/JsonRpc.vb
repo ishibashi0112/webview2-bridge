@@ -7,7 +7,7 @@ Imports Newtonsoft.Json.Linq
 
 Namespace Global.WebView2Bridge.Runtime
 
-    ''' <summary>JSON-RPC 2.0 のエラーコード（HANDOFF.md §5）</summary>
+    ''' <summary>JSON-RPC 2.0 のエラーコード（ARCHITECTURE.md「通信プロトコル」）</summary>
     Public NotInheritable Class JsonRpcErrorCodes
         Private Sub New()
         End Sub

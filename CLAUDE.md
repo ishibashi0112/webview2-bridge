@@ -1,5 +1,5 @@
 # webview2-bridge
-先に HANDOFF.md を読む。設計判断は HANDOFF.md §2 の狙いに従う。決めたことは HANDOFF.md §10 に追記する。
+先に ARCHITECTURE.md（今の正）を読む。設計判断は ARCHITECTURE.md「設計の狙い」に従う。決めたことは `docs/decisions/` に 1 件 1 ファイルで足し、`docs/decisions/README.md` の表に 1 行書く（HANDOFF.md は入口と旧 §番号の対応表だけ）。実装の形が変わったら ARCHITECTURE.md を直す。
 
 ## ルール
 - .NET Framework 4.8 / VB.NET / Newtonsoft.Json / SDK スタイル .vbproj。C# は書かない
@@ -10,14 +10,16 @@
 - 新規アプリの骨組みは `pnpm create webview2-bridge <dir> --name <Name>`（= `webview2-bridge-gen init`。リポジトリ内では `pnpm gen init`）。雛形の唯一の正は `templates/myapp/`（プレースホルダは `MyApp` / `myapp`）
 - ランタイム（Dispatcher 等）は別アセンブリなので、生成コードから Partial Class で拡張しない。生成 Dispatcher は `DispatcherExtensions` の拡張メソッド
 - VB は Option Strict On。生成ファイルは手で編集しない（`Generated/` と `apps/web/src/generated/` は `pnpm gen` で全上書き）
-- AddHostObjectToScript は使わない。通信は JSON-RPC over postMessage（HANDOFF.md §5）
+- AddHostObjectToScript は使わない。通信は JSON-RPC over postMessage（ARCHITECTURE.md「通信プロトコル」）
 - Microsoft.VisualBasic.Compatibility 名前空間は使わない
 - フロントは Vite + React + TS、pnpm。localStorage 等は使わない
 - 既存の旧スタイル .vbproj には触らない（このリポジトリには含めない）
-- 契約は HTTP にも写せる形を保つ（HANDOFF.md §10「HTTP / OpenAPI」）: `pnpm gen` が `contract/openapi.json` を生成し、client の `HttpTransport` がその形で話す。画面のコードに fetch を直接書かない。イベントは補助通知に留め、業務の正しさをイベントに依存させない
+- 契約は HTTP にも写せる形を保つ（docs/decisions/2026-09-19-http-openapi.md）: `pnpm gen` が `contract/openapi.json` を生成し、client の `HttpTransport` がその形で話す。画面のコードに fetch を直接書かない。イベントは補助通知に留め、業務の正しさをイベントに依存させない
 - TS の書式と lint は Biome（`biome.json` 1 枚。`pnpm lint` で検査、`pnpm lint:fix` で整形）。生成物と同梱コピーは対象外。変更の完了条件は `pnpm check`（gen:check → lint → typecheck → test）。CI（`.github/workflows/ci.yml`）も同じ内容を走らせる。会社のアプリ側は YAML ではなく雛形の `pnpm check` を使う
 - 自動テストは TypeScript だけ（VB にテストは書かない）。3 層 = `e2e/screen`（ブラウザ + MemoryTransport）/ `e2e/api`（実 exe の VB を `bridge.call` で直接）/ `e2e/host`（実 exe を画面操作）。部品は `packages/test`、設計は slnmix の `docs/HANDOFF-testing-2026-09.md`。React の操作・確認する要素には `data-testid="<画面>-<役割>"` を付ける。`bridge.ts` は開発ビルドでクライアントを `window.__webview2Bridge` に公開する（api 層が使う）。apps/web を変えたら `e2e/screen` のテストも直し、`pnpm --filter web test` を通す（Claude Code の完了条件）。api / host は Windows 実機のみ
 - 日付は ISO 8601 文字列で往復する。VB 側で JSON を読むときは `JObject.Parse` ではなく `JsonRpc.ParseToken` を使う（Date 自動変換を防ぐ）
+- 契約の必須・null 可否は生成 DTO の `<JsonProperty(Required:=...)>`、文字数・範囲・列挙・件数は生成 `Validate()` が VB 側でも検査する（-32602）。応答で必須の項目を `Nothing` にしない（直列化で例外になる）。`pattern` は VB 側では検査しない
+- `pnpm gen` は `contract/contract.md`（人と AI が読む仕様書）も生成する。AI チャットに渡す最小セットは `contract.ts` + `contract.md` + `e2e/` + `Impl/`
 
 ## 名前
 - npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）、`create-webview2-bridge`（packages/create。スコープ無し）、`@ishibashi0112/webview2-bridge-test`（packages/test）

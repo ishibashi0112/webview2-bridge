@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { defineContract } from "../src/index.js";
 
-/** HANDOFF.md §6 の契約（contract/contract.ts と同じ形） */
+/** ARCHITECTURE.md「契約の書き方」の契約（contract/contract.ts と同じ形） */
 export const sampleContract = (() => {
   const Part = z
     .object({

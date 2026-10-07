@@ -28,20 +28,24 @@ describe("emitVb", () => {
   it("maps optional/nullable value types to Nullable(Of T) and ignores null for optional props", () => {
     const dto = emitAll(kitchenSinkContract)["Dto.vb"]!;
     expect(dto).toContain(
-      '<JsonProperty("page", NullValueHandling:=NullValueHandling.Ignore)>\n        Public Property Page As Nullable(Of Integer)',
+      '<JsonProperty("page", NullValueHandling:=NullValueHandling.Ignore, Required:=Required.DisallowNull)>\n        Public Property Page As Nullable(Of Integer)',
     );
-    expect(dto).toContain('<JsonProperty("nullableInt")>\n        Public Property NullableInt As Nullable(Of Integer)');
+    expect(dto).toContain(
+      '<JsonProperty("nullableInt", Required:=Required.AllowNull)>\n        Public Property NullableInt As Nullable(Of Integer)',
+    );
     expect(dto).toContain(
       '<JsonProperty("optionalNullableInt", NullValueHandling:=NullValueHandling.Ignore)>\n        Public Property OptionalNullableInt As Nullable(Of Integer)',
     );
-    expect(dto).toContain('<JsonProperty("zip")>\n        Public Property Zip As String');
+    expect(dto).toContain('<JsonProperty("zip", Required:=Required.AllowNull)>\n        Public Property Zip As String');
   });
 
   it("escapes VB keywords and converts snake_case", () => {
     const dto = emitAll(kitchenSinkContract)["Dto.vb"]!;
     expect(dto).toContain("Public Property [Date] As String");
     expect(dto).toContain("Public Property [End] As Nullable(Of Boolean)");
-    expect(dto).toContain('<JsonProperty("snake_case_name")>\n        Public Property SnakeCaseName As String');
+    expect(dto).toContain(
+      '<JsonProperty("snake_case_name", Required:=Required.Always)>\n        Public Property SnakeCaseName As String',
+    );
   });
 
   it("emits string enums as Const classes, named by meta id or by owner+property", () => {
@@ -83,7 +87,74 @@ describe("emitVb", () => {
     const byPath = Object.fromEntries(files.map((f) => [f.path, f.content]));
     expect(byPath["Dispatcher.Generated.vb"]).toContain("Imports My.Runtime");
     expect(byPath["Events.vb"]).toContain("Imports My.Runtime");
-    expect(byPath["Dto.vb"]).not.toContain("Imports My.Runtime");
+    expect(byPath["Dto.vb"]).toContain("Imports My.Runtime"); // IValidatable のため
+  });
+
+  it("mirrors zod's required / optional / nullable as JsonProperty Required", () => {
+    const dto = emitAll(kitchenSinkContract)["Dto.vb"]!;
+    expect(dto).toContain('<JsonProperty("name", Required:=Required.Always)>');
+    expect(dto).toContain('<JsonProperty("zip", Required:=Required.AllowNull)>');
+    expect(dto).toContain(
+      '<JsonProperty("page", NullValueHandling:=NullValueHandling.Ignore, Required:=Required.DisallowNull)>',
+    );
+    expect(dto).toContain('<JsonProperty("optionalNullableInt", NullValueHandling:=NullValueHandling.Ignore)>\n');
+    // z.unknown() は zod が実行時に欠落を許すので Required を付けない
+    expect(dto).toContain('<JsonProperty("extra")>\n        Public Property Extra As JToken');
+  });
+
+  it("generates Validate() for string length, numeric range, enum membership, item count and nesting", () => {
+    const Order = z
+      .object({
+        no: z.string().min(1).max(20),
+        qty: z.number().int().min(1).max(999),
+        ratio: z.number().gt(0).lt(1).optional(),
+        status: z.enum(["open", "closed"]),
+        tags: z.array(z.string().min(1)).min(1),
+        lines: z.array(z.object({ partNo: z.string().min(1), qty: z.number().int().min(1) })),
+        notes: z.record(z.string(), z.string().max(10)),
+        flag: z.boolean(),
+      })
+      .meta({ id: "Order" });
+    const contract = defineContract({
+      methods: { orders: { save: { input: z.object({ order: Order }), output: z.object({ ok: z.boolean() }) } } },
+      events: {},
+    });
+    const dto = emitAll(contract)["Dto.vb"]!;
+    expect(dto).toContain("Imports WebView2Bridge.Runtime");
+    expect(dto).toContain("    Public Class Order\n        Implements IValidatable");
+    expect(dto).toContain(
+      "Public Sub Validate(path As String, issues As IList(Of String)) Implements IValidatable.Validate",
+    );
+    expect(dto).toContain('Dim prefix As String = If(String.IsNullOrEmpty(path), String.Empty, path & ".")');
+    expect(dto).toContain(
+      'If No IsNot Nothing Then\n                If No.Length < 1 Then issues.Add(prefix & "no" & ": " & "1 文字以上")',
+    );
+    expect(dto).toContain('If No.Length > 20 Then issues.Add(prefix & "no" & ": " & "20 文字以下")');
+    expect(dto).toContain('If Qty < 1 Then issues.Add(prefix & "qty" & ": " & "1 以上")');
+    expect(dto).toContain('If Qty > 999 Then issues.Add(prefix & "qty" & ": " & "999 以下")');
+    expect(dto).toContain("If Ratio.HasValue Then\n                If Ratio.Value <= 0 Then issues.Add(");
+    expect(dto).toContain('If Ratio.Value >= 1 Then issues.Add(prefix & "ratio" & ": " & "1 未満")');
+    expect(dto).toContain(
+      'If Array.IndexOf(OrderStatus.Values, Status) < 0 Then issues.Add(prefix & "status" & ": " & "次のいずれか: " & String.Join(" / ", OrderStatus.Values))',
+    );
+    expect(dto).toContain('If Tags.Count < 1 Then issues.Add(prefix & "tags" & ": " & "1 件以上")');
+    expect(dto).toContain("For i0 As Integer = 0 To Tags.Count - 1");
+    expect(dto).toContain(
+      'If Tags(i0).Length < 1 Then issues.Add(prefix & "tags" & "[" & i0.ToString() & "]" & ": " & "1 文字以上")',
+    );
+    expect(dto).toContain('Lines(i0).Validate(prefix & "lines" & "[" & i0.ToString() & "]", issues)');
+    expect(dto).toContain("For Each kv0 In Notes");
+    expect(dto).toContain(
+      'If kv0.Value.Length > 10 Then issues.Add(prefix & "notes" & "." & kv0.Key & ": " & "10 文字以下")',
+    );
+    // 入れ子クラスにも Validate が生成され、ルートの Request からも呼ばれる
+    expect(dto).toContain("Public Class OrderLine\n        Implements IValidatable");
+    expect(dto).toContain('If Order IsNot Nothing Then\n                Order.Validate(prefix & "order", issues)');
+    // 規則の無いクラスは空の Validate（prefix を宣言しない）
+    expect(dto).toContain("Public Class OrdersSaveResponse\n        Implements IValidatable");
+    expect(dto).toMatch(
+      /OrdersSaveResponse[\s\S]*?Public Sub Validate\(path As String, issues As IList\(Of String\)\) Implements IValidatable.Validate\n {8}End Sub/,
+    );
   });
 
   it("rejects unions", () => {

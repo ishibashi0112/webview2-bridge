@@ -7,7 +7,7 @@ const Part = z
     partNo: z.string(),
     name: z.string(),
     qty: z.number().int(),
-    updatedAt: z.string().describe("ISO 8601。日付は初期は文字列で往復する（HANDOFF.md §10）"),
+    updatedAt: z.string().describe("ISO 8601。日付は文字列で往復する（ARCHITECTURE.md「契約の書き方」）"),
   })
   .meta({ id: "Part" });
 
