@@ -17,6 +17,7 @@ import {
   validateAppName,
 } from "../src/init.js";
 import { genPackageVersion } from "../src/vb-runtime.js";
+import { mkTempDirInPackage } from "./fixtures.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceTemplate = path.join(repoRoot, "templates/myapp");
@@ -61,7 +62,7 @@ describe("bundled template", () => {
 
   it("generated files in the template are up to date with this generator", async () => {
     // 契約は zod だけで書かれた形に一度落として読む（vitest のワーカーからは tsImport 越しに defineContract を辿れないため）
-    const dir = await mkdtemp(path.join(os.tmpdir(), "wv2b-init-gen-"));
+    const dir = await mkTempDirInPackage("wv2b-init-gen-");
     try {
       const contractTs = await readFile(path.join(bundled, "contract/contract.ts"), "utf8");
       await writeFile(

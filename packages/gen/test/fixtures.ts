@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { defineContract } from "../src/index.js";
 
@@ -77,3 +80,15 @@ export const kitchenSinkContract = (() => {
     },
   });
 })();
+
+/**
+ * テスト用の一時ディレクトリ。os.tmpdir() ではなくこのパッケージの中（`packages/gen/.tmp/`、git 管理外）に作る。
+ * tsImport で読む契約の `import { z } from "zod"` を、実アプリと同じく自分の node_modules を遡って（ESM の経路で）
+ * 解決させるため。/tmp に置くと tsx が親モジュール側へフォールバックして CJS の index.cjs を選び、Node 22.23 では
+ * `Cannot find module '.../zod/index.cjs?namespace=...'` になる（2026-10-07 の初回 CI で判明）。
+ */
+export async function mkTempDirInPackage(prefix: string): Promise<string> {
+  const base = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".tmp");
+  await mkdir(base, { recursive: true });
+  return mkdtemp(path.join(base, prefix));
+}

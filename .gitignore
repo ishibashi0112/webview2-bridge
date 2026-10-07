@@ -5,6 +5,7 @@ test-results/
 playwright-report/
 .env.e2e.local
 *.tsbuildinfo
+.tmp/
 .vite/
 .pnpm-store/
 

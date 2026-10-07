@@ -1,12 +1,12 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type GenerateConfig, generate } from "../src/generate.js";
+import { mkTempDirInPackage } from "./fixtures.js";
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(os.tmpdir(), "wv2b-gen-"));
+  dir = await mkTempDirInPackage("wv2b-gen-");
   // defineContract は identity 関数なので、テスト用の契約は zod だけで書く
   // （vitest のワーカー内では tsImport 越しに src/index.ts を辿れないため。実際の CLI 経由の読み込みは
   //   別プロジェクトからの検証で確認している）
