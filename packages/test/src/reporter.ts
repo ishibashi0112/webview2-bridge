@@ -74,7 +74,10 @@ function summarizeDbDiffText(text: string): string | undefined {
   try {
     const diff = JSON.parse(text) as Record<string, { inserted?: unknown[]; updated?: unknown[]; deleted?: unknown[] }>;
     return Object.entries(diff)
-      .map(([table, d]) => `${table}: inserted ${d.inserted?.length ?? 0} / updated ${d.updated?.length ?? 0} / deleted ${d.deleted?.length ?? 0}`)
+      .map(
+        ([table, d]) =>
+          `${table}: inserted ${d.inserted?.length ?? 0} / updated ${d.updated?.length ?? 0} / deleted ${d.deleted?.length ?? 0}`,
+      )
       .join(", ");
   } catch {
     return undefined;
@@ -89,7 +92,9 @@ export function buildReport(input: ReportInput, maxChars: number = DEFAULT_MAX_C
   const lines: string[] = [];
   lines.push(`# 自動テスト結果 (${fmtTime(input.finishedAt)})`);
   lines.push("");
-  lines.push(`- 結果: **${failed.length === 0 ? "全件成功" : `失敗 ${failed.length} 件`}** (合計 ${input.tests.length} / 成功 ${passed.length} / 失敗 ${failed.length} / スキップ ${skipped.length})`);
+  lines.push(
+    `- 結果: **${failed.length === 0 ? "全件成功" : `失敗 ${failed.length} 件`}** (合計 ${input.tests.length} / 成功 ${passed.length} / 失敗 ${failed.length} / スキップ ${skipped.length})`,
+  );
   lines.push(`- 所要: ${Math.round((input.finishedAt.getTime() - input.startedAt.getTime()) / 1000)} 秒`);
   const projects = [...new Set(input.tests.map((t) => t.project))];
   lines.push(`- 層: ${projects.length > 0 ? projects.join(", ") : "(なし)"}`);
@@ -98,8 +103,12 @@ export function buildReport(input: ReportInput, maxChars: number = DEFAULT_MAX_C
   if (failed.length > 0) {
     lines.push(`## 失敗 (${failed.length})`);
     lines.push("");
-    lines.push("各項目の「期待」はテストコードが仕様書・設計書から読み取った振る舞い、「実際」は今のコードの振る舞いです。");
-    lines.push("実装が仕様と違うなら実装を直し、テストの読み取りが誤っているならテストを直してください。どちらか判断できない場合は質問してください。");
+    lines.push(
+      "各項目の「期待」はテストコードが仕様書・設計書から読み取った振る舞い、「実際」は今のコードの振る舞いです。",
+    );
+    lines.push(
+      "実装が仕様と違うなら実装を直し、テストの読み取りが誤っているならテストを直してください。どちらか判断できない場合は質問してください。",
+    );
     lines.push("");
     failed.forEach((t, i) => {
       lines.push(`### ${i + 1}. [${t.project}] ${t.title}`);
@@ -132,7 +141,9 @@ export function buildReport(input: ReportInput, maxChars: number = DEFAULT_MAX_C
           // Playwright の error-context(失敗時のページ構造の抜粋)など。AI が画面の状態を知る材料になる
           lines.push(`- ${a.name}${a.path !== undefined ? ` (\`${rel(input.rootDir, a.path)}\`)` : ""}:`);
           lines.push("");
-          lines.push(fence(a.text.length > MAX_TEXT_ATTACHMENT ? `${a.text.slice(0, MAX_TEXT_ATTACHMENT)}\n…(省略)` : a.text));
+          lines.push(
+            fence(a.text.length > MAX_TEXT_ATTACHMENT ? `${a.text.slice(0, MAX_TEXT_ATTACHMENT)}\n…(省略)` : a.text),
+          );
         } else if (a.path !== undefined) {
           lines.push(`- ${a.name}: \`${rel(input.rootDir, a.path)}\``);
         }
@@ -214,7 +225,12 @@ export default class MarkdownReporter implements Reporter {
 
   onTestEnd(test: TestCase, result: TestResult): void {
     // リトライがあるときは最後の結果だけを残す
-    const existing = this.entries.findIndex((e) => e.file === test.location.file && e.line === test.location.line && e.title === test.titlePath().slice(3).join(" › "));
+    const existing = this.entries.findIndex(
+      (e) =>
+        e.file === test.location.file &&
+        e.line === test.location.line &&
+        e.title === test.titlePath().slice(3).join(" › "),
+    );
     const entry: ReportTestEntry = {
       project: test.parent.project()?.name ?? "",
       title: test.titlePath().slice(3).join(" › ") || test.title,
@@ -237,7 +253,13 @@ export default class MarkdownReporter implements Reporter {
 
   async onEnd(result: FullResult): Promise<void> {
     const text = buildReport(
-      { startedAt: this.startedAt, finishedAt: new Date(), status: result.status, tests: this.entries, rootDir: this.rootDir },
+      {
+        startedAt: this.startedAt,
+        finishedAt: new Date(),
+        status: result.status,
+        tests: this.entries,
+        rootDir: this.rootDir,
+      },
       this.options.maxChars ?? DEFAULT_MAX_CHARS,
     );
     const file = path.resolve(this.rootDir, this.options.file ?? DEFAULT_FILE);

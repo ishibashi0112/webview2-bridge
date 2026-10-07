@@ -4,7 +4,7 @@
  * - snapshot / diff はテーブル行の前後比較(db/diff.ts の純粋関数)
  */
 import type { Knex } from "knex";
-import { diffRows, pickKey, summarizeDiff, type Row, type TableDiff } from "./diff.js";
+import { diffRows, pickKey, type Row, summarizeDiff, type TableDiff } from "./diff.js";
 
 export interface SnapshotSpec {
   table: string;
@@ -110,13 +110,19 @@ export function createDb(knex: Knex, options: DbOptions = {}): Db {
       for (const spec of specs) {
         if (spec.key.length === 0) throw new Error(`snapshot: ${spec.table} の key が空です`);
         if (spec.where === undefined) {
-          options.onWarning?.(`snapshot(${spec.table}): where が無いので全行(最大 ${maxRows} 行)を読みます。testId で絞ることを勧めます`);
+          options.onWarning?.(
+            `snapshot(${spec.table}): where が無いので全行(最大 ${maxRows} 行)を読みます。testId で絞ることを勧めます`,
+          );
         }
-        const rows = (await applyWhere(knex(spec.table), spec.where).select("*").limit(maxRows + 1)) as Row[];
+        const rows = (await applyWhere(knex(spec.table), spec.where)
+          .select("*")
+          .limit(maxRows + 1)) as Row[];
         const truncated = rows.length > maxRows;
         if (truncated) {
           rows.length = maxRows;
-          options.onWarning?.(`snapshot(${spec.table}): ${maxRows} 行を超えたため打ち切りました。diff は信頼できません`);
+          options.onWarning?.(
+            `snapshot(${spec.table}): ${maxRows} 行を超えたため打ち切りました。diff は信頼できません`,
+          );
         }
         tables[spec.table] = { spec, rows, truncated };
       }
@@ -125,7 +131,9 @@ export function createDb(knex: Knex, options: DbOptions = {}): Db {
     async diff(snapshot) {
       const result: DbDiff = {};
       for (const [table, snap] of Object.entries(snapshot.tables)) {
-        const rows = (await applyWhere(knex(table), snap.spec.where).select("*").limit(maxRows + 1)) as Row[];
+        const rows = (await applyWhere(knex(table), snap.spec.where)
+          .select("*")
+          .limit(maxRows + 1)) as Row[];
         if (rows.length > maxRows) rows.length = maxRows;
         const d = diffRows(snap.rows, rows, snap.spec.key);
         result[table] = d;
@@ -143,9 +151,14 @@ export function createDb(knex: Knex, options: DbOptions = {}): Db {
       }
       const row = rows[0]!;
       const mismatches: string[] = [];
-      const d = diffRows([{ ...row, ...expected }], [row], Object.keys(where).length > 0 ? Object.keys(where) : Object.keys(row));
+      const d = diffRows(
+        [{ ...row, ...expected }],
+        [row],
+        Object.keys(where).length > 0 ? Object.keys(where) : Object.keys(row),
+      );
       for (const u of d.updated) {
-        for (const [col, c] of Object.entries(u.changed)) mismatches.push(`${col}: 期待 ${fmt(c.before)} / 実際 ${fmt(c.after)}`);
+        for (const [col, c] of Object.entries(u.changed))
+          mismatches.push(`${col}: 期待 ${fmt(c.before)} / 実際 ${fmt(c.after)}`);
       }
       if (mismatches.length > 0) throw new Error(`expectRow(${table}): 不一致\n  ${mismatches.join("\n  ")}`);
       return row;
@@ -189,4 +202,4 @@ export function normalizeRawResult(knex: Knex, result: unknown): Row[] {
   return Array.isArray(result) ? (result as Row[]) : [];
 }
 
-export { diffRows, summarizeDiff, type Row, type TableDiff };
+export { diffRows, type Row, summarizeDiff, type TableDiff };

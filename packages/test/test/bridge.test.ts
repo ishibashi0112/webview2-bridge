@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { Page } from "@playwright/test";
+import { describe, expect, it } from "vitest";
 import { BridgeCallError, createBridge } from "../src/bridge.js";
 
 /** page.evaluate を Node 内で模倣する(関数を window 相当のグローバルに対して実行) */
@@ -55,7 +55,9 @@ describe("createBridge", () => {
     expect(e1.remoteName).toBe("BridgeNotExposed");
     const e2 = await createBridge(fakePage({ __webview2Bridge: client })).expectError("parts.nope");
     expect(e2.remoteName).toBe("MethodNotFound");
-    await expect(createBridge(fakePage({ __webview2Bridge: client })).expectError("parts.search", { keyword: "x" })).rejects.toThrow(/成功しました/);
+    await expect(
+      createBridge(fakePage({ __webview2Bridge: client })).expectError("parts.search", { keyword: "x" }),
+    ).rejects.toThrow(/成功しました/);
   });
 
   it("グローバル名を変えられる", async () => {

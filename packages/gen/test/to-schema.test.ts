@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { GenerateError, defineContract, toSchema } from "../src/index.js";
+import { defineContract, GenerateError, toSchema } from "../src/index.js";
 import { kitchenSinkContract, sampleContract } from "./fixtures.js";
 
 describe("toSchema", () => {

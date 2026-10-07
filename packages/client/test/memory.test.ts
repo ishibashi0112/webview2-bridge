@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { BridgeError, JsonRpcErrorCodes, MemoryTransport, type MemoryHandlers } from "../src/index.js";
-import { contract, parts, type Contract } from "./fixtures.js";
+import { BridgeError, JsonRpcErrorCodes, type MemoryHandlers, MemoryTransport } from "../src/index.js";
+import { type Contract, parts } from "./fixtures.js";
 
 function make(overrides: Partial<MemoryHandlers<Contract>["parts"]> = {}, delay?: number) {
   const handlers: MemoryHandlers<Contract> = {

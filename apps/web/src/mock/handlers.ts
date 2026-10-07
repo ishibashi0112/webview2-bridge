@@ -24,7 +24,11 @@ export const handlers: MemoryHandlers<Contract> = {
     search: async (input, { emit }) => {
       // "error" で検索すると VB 側の例外相当（-32000）を返す
       if (input.keyword.toLowerCase() === "error") {
-        throw new BridgeError({ code: JsonRpcErrorCodes.ServerError, message: "Simulated failure", data: "System.InvalidOperationException" });
+        throw new BridgeError({
+          code: JsonRpcErrorCodes.ServerError,
+          message: "Simulated failure",
+          data: "System.InvalidOperationException",
+        });
       }
       emit("progress", { percent: 0, message: "検索開始" });
       await sleep(150);

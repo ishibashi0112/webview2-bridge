@@ -1,5 +1,5 @@
 import { BridgeError, BridgeValidationError } from "@ishibashi0112/webview2-bridge-client";
-import { useEffect, useState, type FormEvent } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { client, transportMode } from "./bridge";
 import type { Part, ProgressEvent } from "./generated/contract-types";
 
@@ -14,7 +14,11 @@ function describeError(e: unknown): ErrorInfo {
     return { kind: `validation (${e.direction})`, message: e.message, detail: JSON.stringify(e.issues, null, 2) };
   }
   if (e instanceof BridgeError) {
-    return { kind: `${e.name} ${e.code}`, message: e.message, detail: e.data === undefined ? undefined : JSON.stringify(e.data) };
+    return {
+      kind: `${e.name} ${e.code}`,
+      message: e.message,
+      detail: e.data === undefined ? undefined : JSON.stringify(e.data),
+    };
   }
   return { kind: "error", message: e instanceof Error ? e.message : String(e) };
 }
@@ -26,13 +30,19 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ErrorInfo | null>(null);
   const [progress, setProgress] = useState<ProgressEvent | null>(null);
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<{ id: number; text: string }[]>([]);
+  const logSeq = useRef(0);
 
   // Host → Web イベント（event.progress）の購読。アンマウント時に解除
   useEffect(() => {
     return client.events.on("progress", (p) => {
       setProgress(p);
-      setLog((prev) => [`${new Date().toLocaleTimeString()} progress ${p.percent}% ${p.message ?? ""}`, ...prev].slice(0, 20));
+      logSeq.current += 1;
+      const entry = {
+        id: logSeq.current,
+        text: `${new Date().toLocaleTimeString()} progress ${p.percent}% ${p.message ?? ""}`,
+      };
+      setLog((prev) => [entry, ...prev].slice(0, 20));
     });
   }, []);
 
@@ -59,17 +69,30 @@ export function App() {
     <main className="app">
       <header>
         <h1>webview2-bridge</h1>
-        <span className={`badge badge-${transportMode}`} data-testid="transport-badge">transport: {transportMode}</span>
+        <span className={`badge badge-${transportMode}`} data-testid="transport-badge">
+          transport: {transportMode}
+        </span>
       </header>
 
       <form onSubmit={(e) => void onSubmit(e)} className="search">
         <label>
           keyword
-          <input data-testid="search-keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder='空にすると入力検証エラー、"error" でホスト例外' />
+          <input
+            data-testid="search-keyword"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder='空にすると入力検証エラー、"error" でホスト例外'
+          />
         </label>
         <label>
           limit
-          <input data-testid="search-limit" value={limit} onChange={(e) => setLimit(e.target.value)} inputMode="numeric" style={{ width: "5em" }} />
+          <input
+            data-testid="search-limit"
+            value={limit}
+            onChange={(e) => setLimit(e.target.value)}
+            inputMode="numeric"
+            style={{ width: "5em" }}
+          />
         </label>
         <button type="submit" disabled={busy} data-testid="search-submit">
           {busy ? "検索中…" : "parts.search"}
@@ -102,7 +125,9 @@ export function App() {
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={4} data-testid="search-empty">該当なし</td>
+                <td colSpan={4} data-testid="search-empty">
+                  該当なし
+                </td>
               </tr>
             )}
             {items.map((p) => (
@@ -119,7 +144,15 @@ export function App() {
 
       <section className="log" data-testid="events-log">
         <h2>events</h2>
-        {log.length === 0 ? <p className="muted">（まだ受信なし）</p> : <ul>{log.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+        {log.length === 0 ? (
+          <p className="muted">（まだ受信なし）</p>
+        ) : (
+          <ul>
+            {log.map((l) => (
+              <li key={l.id}>{l.text}</li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );

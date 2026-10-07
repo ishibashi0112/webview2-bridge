@@ -6,14 +6,16 @@
  * - `myapp`（小文字）: package.json の name
  * - .sln のプロジェクト GUID は新しく振り直す（プロジェクト種別 GUID は変えない）
  * - `_gitignore` / `_npmrc` は `.gitignore` / `.npmrc` に戻す（npm pack が .gitignore を改名し .npmrc を除外するため同梱時は別名）
+ * - `_biome.json` は `biome.json` に戻す（templates/ 内に biome.json があると本体の Biome が入れ子のルート設定として弾くため）
  *   （`.gitattributes` は pack で消えないのでそのまま同梱・コピーする）
  *
  * Node 固有（fs）なので index.ts からは export しない（generate と同じ entry）。
  */
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+
 import { randomUUID } from "node:crypto";
-import { createInterface } from "node:readline/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { GenerateError } from "./schema.js";
 
@@ -21,7 +23,12 @@ import { GenerateError } from "./schema.js";
 export const TEMPLATE_NAME = "MyApp";
 
 /** 同梱時に改名したファイルを元の名前に戻す（scripts/sync-template.mjs の BUNDLED_RENAMES の逆） */
-const BUNDLED_RESTORE: Readonly<Record<string, string>> = { _gitignore: ".gitignore", _npmrc: ".npmrc" };
+const BUNDLED_RESTORE: Readonly<Record<string, string>> = {
+  _gitignore: ".gitignore",
+  _npmrc: ".npmrc",
+  // templates/myapp/ に biome.json を置くと本体の Biome が「入れ子のルート設定」として弾くので、雛形では _biome.json の名前で持ち、init が戻す
+  "_biome.json": "biome.json",
+};
 
 export interface ScaffoldOptions {
   /** 書き出し先ディレクトリ（無ければ作る。既にファイルがあれば force なしではエラー） */
@@ -79,7 +86,8 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
     throw new GenerateError(`${targetDir} is not empty (use --force to write into it anyway)`);
   }
 
-  const rename = (s: string): string => s.replaceAll(TEMPLATE_NAME, name).replaceAll(TEMPLATE_NAME.toLowerCase(), name.toLowerCase());
+  const rename = (s: string): string =>
+    s.replaceAll(TEMPLATE_NAME, name).replaceAll(TEMPLATE_NAME.toLowerCase(), name.toLowerCase());
   const files: string[] = [];
   for (const rel of await listFiles(templateDir)) {
     const outRel = rename(BUNDLED_RESTORE[rel] ?? rel);

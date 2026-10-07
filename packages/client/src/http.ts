@@ -4,8 +4,8 @@ import {
   BridgeTimeoutError,
   isJsonRpcNotification,
   JsonRpcErrorCodes,
-  ListenerMap,
   type JsonRpcErrorObject,
+  ListenerMap,
   type Transport,
 } from "./transport.js";
 
@@ -146,7 +146,11 @@ export class HttpTransport implements Transport {
   private async buildHeaders(base: Record<string, string>): Promise<Headers> {
     const h = new Headers(base);
     const extra = typeof this.headers === "function" ? await this.headers() : this.headers;
-    if (extra) new Headers(extra).forEach((v, k) => h.set(k, v));
+    if (extra) {
+      new Headers(extra).forEach((v, k) => {
+        h.set(k, v);
+      });
+    }
     return h;
   }
 
@@ -157,7 +161,10 @@ export class HttpTransport implements Transport {
     void this.runEventStream(controller, this.events);
   }
 
-  private async runEventStream(controller: AbortController, events: Required<HttpTransportEventsOptions>): Promise<void> {
+  private async runEventStream(
+    controller: AbortController,
+    events: Required<HttpTransportEventsOptions>,
+  ): Promise<void> {
     const url = `${this.baseUrl}${events.path.startsWith("/") ? "" : "/"}${events.path}`;
     while (!controller.signal.aborted) {
       try {
@@ -203,14 +210,15 @@ export class HttpTransport implements Transport {
         const { value, done } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buffer.indexOf("\n")) >= 0) {
+        let nl = buffer.indexOf("\n");
+        while (nl >= 0) {
           let line = buffer.slice(0, nl);
           buffer = buffer.slice(nl + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line === "") flush();
           else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /, ""));
           // "event:" / "id:" / "retry:" / コメント行は使わない（通知の種類は JSON の method で判別する）
+          nl = buffer.indexOf("\n");
         }
       }
       flush();

@@ -61,11 +61,15 @@ describe.skipIf(!canRun)("launchHost + createBridge (fake host = headless Chromi
       expect(await app.page.getByTestId("title").textContent()).toBe("fake app");
       const bridge = createBridge(app.page);
       expect(await bridge.isAvailable()).toBe(true);
-      expect(await bridge.call("parts.search", { keyword: "M6" })).toEqual({ items: [{ partNo: "A-001", name: "Bolt M6" }] });
+      expect(await bridge.call("parts.search", { keyword: "M6" })).toEqual({
+        items: [{ partNo: "A-001", name: "Bolt M6" }],
+      });
       const err = await bridge.expectError("parts.fail");
       expect(err.code).toBe(-32000);
       // 同じポートで 2 つ目は起動できない
-      await expect(launchHost({ exe: fakeHost, devUrl, cdpPort: 9333, env, chromium })).rejects.toThrow(HostLaunchError);
+      await expect(launchHost({ exe: fakeHost, devUrl, cdpPort: 9333, env, chromium })).rejects.toThrow(
+        HostLaunchError,
+      );
     } finally {
       await app.close();
     }
@@ -79,6 +83,8 @@ describe.skipIf(!canRun)("launchHost + createBridge (fake host = headless Chromi
   });
 
   it("起動直後に終了する exe は理由付きで失敗する", async () => {
-    await expect(launchHost({ exe: path.join(here, "fixtures/exit-host.sh"), cdpPort: 9334, chromium, startupTimeoutMs: 10_000 })).rejects.toThrow(/起動直後に終了/);
+    await expect(
+      launchHost({ exe: path.join(here, "fixtures/exit-host.sh"), cdpPort: 9334, chromium, startupTimeoutMs: 10_000 }),
+    ).rejects.toThrow(/起動直後に終了/);
   }, 20_000);
 });

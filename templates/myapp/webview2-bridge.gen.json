@@ -6,7 +6,7 @@
   "vb": {
     "outDir": "dotnet/MyApp.Contract/Generated",
     "namespace": "MyApp.Contract",
-    "runtime":  { "outDir": "dotnet/MyApp.Contract/Runtime" },
+    "runtime": { "outDir": "dotnet/MyApp.Contract/Runtime" },
     "winforms": { "outDir": "dotnet/MyApp.Host/Bridge" }
   }
 }

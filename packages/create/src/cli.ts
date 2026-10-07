@@ -6,7 +6,7 @@
  * 中身は @ishibashi0112/webview2-bridge-gen の scaffold を呼ぶだけ。
  */
 import path from "node:path";
-import { scaffold, askInitOptions, defaultAppName } from "@ishibashi0112/webview2-bridge-gen/generate";
+import { askInitOptions, defaultAppName, scaffold } from "@ishibashi0112/webview2-bridge-gen/generate";
 
 function usage(): never {
   console.error(`Usage: pnpm create webview2-bridge <dir> [--name <AppName>] [--force]

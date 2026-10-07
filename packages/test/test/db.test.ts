@@ -29,9 +29,13 @@ afterEach(async () => {
 describe("db helper (sqlite)", () => {
   it("insert → rows → expectRow → cleanup で消える", async () => {
     await db.insert("Customers", { CustomerCode: "E2E-1-C1", Name: "テスト顧客" });
-    expect(await db.rows("Customers", { CustomerCode: "E2E-1-C1" })).toEqual([{ CustomerCode: "E2E-1-C1", Name: "テスト顧客" }]);
+    expect(await db.rows("Customers", { CustomerCode: "E2E-1-C1" })).toEqual([
+      { CustomerCode: "E2E-1-C1", Name: "テスト顧客" },
+    ]);
     await db.expectRow("Customers", { CustomerCode: "E2E-1-C1" }, { Name: "テスト顧客" });
-    await expect(db.expectRow("Customers", { CustomerCode: "E2E-1-C1" }, { Name: "別名" })).rejects.toThrow(/Name: 期待 "別名" \/ 実際 "テスト顧客"/);
+    await expect(db.expectRow("Customers", { CustomerCode: "E2E-1-C1" }, { Name: "別名" })).rejects.toThrow(
+      /Name: 期待 "別名" \/ 実際 "テスト顧客"/,
+    );
     await expect(db.expectRow("Customers", { CustomerCode: "nope" }, {})).rejects.toThrow(/0 行/);
     const r = await db.cleanup();
     expect(r).toEqual({ deleted: 1, failures: [] });
@@ -45,11 +49,15 @@ describe("db helper (sqlite)", () => {
     await knex("Orders").insert({ OrderNo: "ORD-1", CustomerCode: "E2E-2-C1", Status: "NEW", Qty: 2 });
     await knex("Orders").insert({ OrderNo: "ORD-other", CustomerCode: "OTHER", Status: "NEW", Qty: 1 });
     const diff = await db.diff(before);
-    expect(diff["Orders"]?.inserted).toEqual([{ Id: 1, OrderNo: "ORD-1", CustomerCode: "E2E-2-C1", Status: "NEW", Qty: 2 }]);
+    expect(diff["Orders"]?.inserted).toEqual([
+      { Id: 1, OrderNo: "ORD-1", CustomerCode: "E2E-2-C1", Status: "NEW", Qty: 2 },
+    ]);
     expect(diff["Orders"]?.updated).toEqual([]);
     const r = await db.cleanup();
     expect(r.deleted).toBe(2); // Orders の ORD-1 と Customers の 1 行
-    expect(await db.rows("Orders")).toEqual([{ Id: 2, OrderNo: "ORD-other", CustomerCode: "OTHER", Status: "NEW", Qty: 1 }]);
+    expect(await db.rows("Orders")).toEqual([
+      { Id: 2, OrderNo: "ORD-other", CustomerCode: "OTHER", Status: "NEW", Qty: 1 },
+    ]);
   });
 
   it("diff は updated の変わった列と deleted を返す", async () => {
@@ -57,7 +65,9 @@ describe("db helper (sqlite)", () => {
       { OrderNo: "A", CustomerCode: "c", Status: "NEW", Qty: 1 },
       { OrderNo: "B", CustomerCode: "c", Status: "NEW", Qty: 1 },
     ]);
-    const before = await db.snapshot([{ table: "Orders", key: ["OrderNo"], where: (qb) => qb.where("CustomerCode", "c") }]);
+    const before = await db.snapshot([
+      { table: "Orders", key: ["OrderNo"], where: (qb) => qb.where("CustomerCode", "c") },
+    ]);
     await knex("Orders").where({ OrderNo: "A" }).update({ Status: "DONE" });
     await knex("Orders").where({ OrderNo: "B" }).delete();
     const diff = await db.diff(before);
@@ -66,7 +76,9 @@ describe("db helper (sqlite)", () => {
   });
 
   it("where 無しの snapshot は警告し、maxRows を超えると打ち切る", async () => {
-    await knex("Orders").insert([1, 2, 3, 4].map((n) => ({ OrderNo: `O${n}`, CustomerCode: "c", Status: "NEW", Qty: n })));
+    await knex("Orders").insert(
+      [1, 2, 3, 4].map((n) => ({ OrderNo: `O${n}`, CustomerCode: "c", Status: "NEW", Qty: n })),
+    );
     const snap = await db.snapshot([{ table: "Orders", key: ["OrderNo"] }]);
     expect(snap.tables["Orders"]?.truncated).toBe(true);
     expect(snap.tables["Orders"]?.rows).toHaveLength(3);

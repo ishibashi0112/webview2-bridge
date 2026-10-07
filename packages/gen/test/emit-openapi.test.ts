@@ -5,7 +5,10 @@ import { kitchenSinkContract, sampleContract } from "./fixtures.js";
 
 type Doc = {
   openapi: string;
-  paths: Record<string, Record<string, { operationId: string; requestBody?: unknown; responses: Record<string, unknown> }>>;
+  paths: Record<
+    string,
+    Record<string, { operationId: string; requestBody?: unknown; responses: Record<string, unknown> }>
+  >;
   components: { schemas: Record<string, unknown>; responses: Record<string, unknown> };
 };
 
@@ -17,7 +20,7 @@ function emit(contract: Parameters<typeof toSchema>[0], opts?: Parameters<typeof
 
 /** 文書内のすべての $ref が components/schemas か components/responses に解決できること */
 function collectRefs(node: unknown, out: string[] = []): string[] {
-  if (Array.isArray(node)) node.forEach((n) => collectRefs(n, out));
+  if (Array.isArray(node)) for (const n of node) collectRefs(n, out);
   else if (typeof node === "object" && node !== null) {
     for (const [k, v] of Object.entries(node)) {
       if (k === "$ref" && typeof v === "string") out.push(v);
@@ -43,7 +46,9 @@ describe("emitOpenApi", () => {
   });
 
   it("kitchen sink contract", () => {
-    expect(emitOpenApi(toSchema(kitchenSinkContract), { title: "Kitchen", version: "2.0.0" })[0]!.content).toMatchSnapshot();
+    expect(
+      emitOpenApi(toSchema(kitchenSinkContract), { title: "Kitchen", version: "2.0.0" })[0]!.content,
+    ).toMatchSnapshot();
   });
 
   it("maps each method to POST /<ns>/<name> with DTO-named components", () => {
@@ -73,7 +78,10 @@ describe("emitOpenApi", () => {
     expect(Object.keys(content)).toEqual(["text/event-stream"]);
     expect(content["text/event-stream"]!.schema.oneOf).toHaveLength(2);
     expect(content["text/event-stream"]!.schema.oneOf[0]).toMatchObject({
-      properties: { method: { const: "event.customerChanged" }, params: { $ref: "#/components/schemas/CustomerChangedEvent" } },
+      properties: {
+        method: { const: "event.customerChanged" },
+        params: { $ref: "#/components/schemas/CustomerChangedEvent" },
+      },
     });
     expectRefsResolve(doc);
   });

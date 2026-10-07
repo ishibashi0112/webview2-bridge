@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { defineContract } from "@ishibashi0112/webview2-bridge-gen";
+import { z } from "zod";
 
 // 共有 DTO は .meta({ id }) で名前を付ける。ジェネレータはこの id を VB クラス名 / TS 型名に使う
 const Part = z

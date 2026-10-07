@@ -25,12 +25,35 @@ function App() {
 
   return (
     <div style={{ fontFamily: "sans-serif", padding: 16 }}>
-      <p>transport: <b data-testid="transport-badge">{transportMode}</b></p>
-      <input data-testid="customers-keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="keyword" />
-      <button data-testid="customers-search" onClick={search}>customers.list</button>
-      {percent !== null && <span data-testid="customers-progress" style={{ marginLeft: 8 }}>{percent}%</span>}
-      {error && <p data-testid="customers-error" style={{ color: "red" }}>{error}</p>}
-      <ul data-testid="customers-list">{items.map((c) => <li key={c.id} data-testid="customers-item">{c.id}: {c.name}</li>)}</ul>
+      <p>
+        transport: <b data-testid="transport-badge">{transportMode}</b>
+      </p>
+      <input
+        data-testid="customers-keyword"
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        placeholder="keyword"
+      />
+      <button type="button" data-testid="customers-search" onClick={search}>
+        customers.list
+      </button>
+      {percent !== null && (
+        <span data-testid="customers-progress" style={{ marginLeft: 8 }}>
+          {percent}%
+        </span>
+      )}
+      {error && (
+        <p data-testid="customers-error" style={{ color: "red" }}>
+          {error}
+        </p>
+      )}
+      <ul data-testid="customers-list">
+        {items.map((c) => (
+          <li key={c.id} data-testid="customers-item">
+            {c.id}: {c.name}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

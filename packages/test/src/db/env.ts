@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
-import { isDbClient, type DbClient } from "./guard.js";
+import { type DbClient, isDbClient } from "./guard.js";
 
 export interface KnexLikeConfig {
   client: DbClient;
@@ -23,7 +23,11 @@ export interface KnexLikeConfig {
 export const DEFAULT_ENV_FILES = [".env.e2e.local", ".env.e2e"] as const;
 
 /** env ファイルを読み、未設定の変数だけ target に入れる。読んだファイルのパスを返す */
-export function loadEnvFiles(baseDir: string, files: readonly string[] = DEFAULT_ENV_FILES, target: NodeJS.ProcessEnv = process.env): string[] {
+export function loadEnvFiles(
+  baseDir: string,
+  files: readonly string[] = DEFAULT_ENV_FILES,
+  target: NodeJS.ProcessEnv = process.env,
+): string[] {
   const loaded: string[] = [];
   for (const file of files) {
     const full = path.resolve(baseDir, file);
@@ -63,7 +67,8 @@ export function knexConfigFromEnv(env: NodeJS.ProcessEnv = process.env): KnexLik
   }
   const host = env["E2E_DB_HOST"];
   const port = env["E2E_DB_PORT"] !== undefined && env["E2E_DB_PORT"] !== "" ? Number(env["E2E_DB_PORT"]) : undefined;
-  if (port !== undefined && !Number.isInteger(port)) throw new DbEnvError(`E2E_DB_PORT=${env["E2E_DB_PORT"]} は整数ではありません`);
+  if (port !== undefined && !Number.isInteger(port))
+    throw new DbEnvError(`E2E_DB_PORT=${env["E2E_DB_PORT"]} は整数ではありません`);
   const user = env["E2E_DB_USER"];
   const password = env["E2E_DB_PASSWORD"];
   const database = env["E2E_DB_DATABASE"];
@@ -79,7 +84,8 @@ export function knexConfigFromEnv(env: NodeJS.ProcessEnv = process.env): KnexLik
     options = parsed;
   }
   const required = (name: string, value: string | undefined): string => {
-    if (value === undefined || value === "") throw new DbEnvError(`${name} が設定されていません(.env.e2e.local を確認してください)`);
+    if (value === undefined || value === "")
+      throw new DbEnvError(`${name} が設定されていません(.env.e2e.local を確認してください)`);
     return value;
   };
   let connection: Record<string, unknown>;

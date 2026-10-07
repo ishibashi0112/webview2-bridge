@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ContractDef } from "./define.js";
-import { GenerateError, type ContractSchema, type JsonSchema } from "./schema.js";
+import { type ContractSchema, GenerateError, type JsonSchema } from "./schema.js";
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 

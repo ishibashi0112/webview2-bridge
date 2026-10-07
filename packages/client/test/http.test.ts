@@ -6,8 +6,8 @@ import {
   BridgeError,
   BridgeTimeoutError,
   BridgeValidationError,
-  HttpTransport,
   createClient,
+  HttpTransport,
 } from "../src/index.js";
 import { contract, parts } from "./fixtures.js";
 
@@ -58,7 +58,8 @@ beforeAll(async () => {
     const body = await readBody(req);
     if (url === "/api/parts/search") {
       const input = JSON.parse(body) as { keyword: string; limit?: number };
-      if (input.keyword === "boom") return json(res, 500, { code: -32000, message: "Simulated failure", data: "System.InvalidOperationException" });
+      if (input.keyword === "boom")
+        return json(res, 500, { code: -32000, message: "Simulated failure", data: "System.InvalidOperationException" });
       if (input.keyword === "html") {
         res.writeHead(502, { "content-type": "text/html" });
         return res.end("<h1>Bad Gateway</h1>");
@@ -131,7 +132,9 @@ describe("HttpTransport against a real HTTP server", () => {
   });
 
   it("wraps non-JSON failures (proxy HTML) as -32603 with the status", async () => {
-    const e = (await make().call("parts.search", { keyword: "html" }).catch((x: unknown) => x)) as BridgeError;
+    const e = (await make()
+      .call("parts.search", { keyword: "html" })
+      .catch((x: unknown) => x)) as BridgeError;
     expect(e).toBeInstanceOf(BridgeError);
     expect(e.code).toBe(-32603);
     expect(e.message).toContain("502");

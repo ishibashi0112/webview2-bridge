@@ -1,10 +1,5 @@
 import type { z } from "zod";
-import {
-  BridgeValidationError,
-  eventMethod,
-  type ContractShape,
-  type Transport,
-} from "./transport.js";
+import { BridgeValidationError, type ContractShape, eventMethod, type Transport } from "./transport.js";
 
 /** `client.parts.search(input)` の形。namespace → method → 型付き関数 */
 export type ClientMethods<C extends ContractShape> = {
@@ -17,10 +12,7 @@ export type ClientMethods<C extends ContractShape> = {
 
 export interface ClientEvents<C extends ContractShape> {
   /** イベントを購読する。戻り値は購読解除関数 */
-  on<E extends keyof C["events"] & string>(
-    name: E,
-    handler: (payload: z.output<C["events"][E]>) => void,
-  ): () => void;
+  on<E extends keyof C["events"] & string>(name: E, handler: (payload: z.output<C["events"][E]>) => void): () => void;
 }
 
 export type Client<C extends ContractShape> = ClientMethods<C> & {

@@ -1,0 +1,67 @@
+# 基盤リポジトリの CI。会社のアプリ側には YAML ではなく `pnpm check`(雛形の package.json)を置く(HANDOFF.md §10)。
+# node:  生成物の鮮度 / Biome / 型 / Vitest / screen テスト / 公開用ビルドと同梱コピーの同期
+# dotnet: Linux で Contract のビルドと xUnit、Windows で WinForms を含む sln 全体のビルド
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    name: node (gen:check / lint / typecheck / test / build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6 # 版は package.json の packageManager から
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm gen:check
+      - run: pnpm lint
+      - run: pnpm -r typecheck
+      - name: Install Chromium for the screen tests
+        run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm -r test
+      - name: Build the publishable packages and verify the bundled copies are in sync
+        run: |
+          pnpm build
+          git diff --exit-code -- packages/gen/vb-runtime packages/gen/template
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-results
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
+          if-no-files-found: ignore
+
+  dotnet-linux:
+    name: dotnet (Contract build + xUnit, Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet build dotnet/WebView2Bridge.Contract -c Release
+      - run: dotnet test dotnet/WebView2Bridge.Contract.Tests -c Release
+
+  dotnet-windows:
+    name: dotnet (full solution incl. WinForms host, Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet build dotnet/WebView2Bridge.sln -c Release

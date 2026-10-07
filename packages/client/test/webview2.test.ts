@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BridgeDisposedError, BridgeError, BridgeTimeoutError, WebView2Transport, type WebView2Like } from "../src/index.js";
+import {
+  BridgeDisposedError,
+  BridgeError,
+  BridgeTimeoutError,
+  type WebView2Like,
+  WebView2Transport,
+} from "../src/index.js";
 
 class FakeWebView implements WebView2Like {
   readonly sent: unknown[] = [];

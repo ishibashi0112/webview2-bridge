@@ -49,7 +49,7 @@ sed -i '' 's|<WebView2BridgeVersion>.*</WebView2BridgeVersion>|<WebView2BridgeVe
 
 ```sh
 pnpm install
-pnpm gen:check && pnpm test && pnpm typecheck && pnpm build
+pnpm gen:check && pnpm lint && pnpm test && pnpm typecheck && pnpm build   # 先頭 4 つは pnpm check でまとめて打てる
 dotnet build dotnet/WebView2Bridge.sln && dotnet test dotnet/WebView2Bridge.Contract.Tests
 ```
 

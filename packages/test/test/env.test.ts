@@ -22,16 +22,32 @@ describe("knexConfigFromEnv", () => {
     expect(c).toEqual({
       client: "mssql",
       pool: { min: 0, max: 2 },
-      connection: { server: "db01", port: 1434, user: "u", password: "p", database: "MyApp_Test", options: { trustServerCertificate: true, encrypt: false } },
+      connection: {
+        server: "db01",
+        port: 1434,
+        user: "u",
+        password: "p",
+        database: "MyApp_Test",
+        options: { trustServerCertificate: true, encrypt: false },
+      },
     });
   });
   it("oracledb: connectString は host:port/database から組み立て、明示があればそれ", () => {
-    expect(knexConfigFromEnv({ E2E_DB_CLIENT: "oracledb", E2E_DB_HOST: "db01", E2E_DB_USER: "u", E2E_DB_DATABASE: "TESTPDB" })?.connection).toEqual({
+    expect(
+      knexConfigFromEnv({
+        E2E_DB_CLIENT: "oracledb",
+        E2E_DB_HOST: "db01",
+        E2E_DB_USER: "u",
+        E2E_DB_DATABASE: "TESTPDB",
+      })?.connection,
+    ).toEqual({
       user: "u",
       password: "",
       connectString: "db01:1521/TESTPDB",
     });
-    expect(knexConfigFromEnv({ E2E_DB_CLIENT: "oracledb", E2E_DB_USER: "u", E2E_DB_CONNECT_STRING: "alias" })?.connection).toMatchObject({ connectString: "alias" });
+    expect(
+      knexConfigFromEnv({ E2E_DB_CLIENT: "oracledb", E2E_DB_USER: "u", E2E_DB_CONNECT_STRING: "alias" })?.connection,
+    ).toMatchObject({ connectString: "alias" });
   });
   it("better-sqlite3: filename と useNullAsDefault", () => {
     expect(knexConfigFromEnv({ E2E_DB_CLIENT: "better-sqlite3", E2E_DB_FILENAME: ":memory:" })).toEqual({
@@ -42,9 +58,27 @@ describe("knexConfigFromEnv", () => {
   });
   it("不正な値は DbEnvError", () => {
     expect(() => knexConfigFromEnv({ E2E_DB_CLIENT: "mongo" })).toThrow(DbEnvError);
-    expect(() => knexConfigFromEnv({ E2E_DB_CLIENT: "pg", E2E_DB_HOST: "h", E2E_DB_USER: "u", E2E_DB_DATABASE: "d", E2E_DB_PORT: "abc" })).toThrow(/E2E_DB_PORT/);
-    expect(() => knexConfigFromEnv({ E2E_DB_CLIENT: "pg", E2E_DB_USER: "u", E2E_DB_DATABASE: "d" })).toThrow(/E2E_DB_HOST/);
-    expect(() => knexConfigFromEnv({ E2E_DB_CLIENT: "pg", E2E_DB_HOST: "h", E2E_DB_USER: "u", E2E_DB_DATABASE: "d", E2E_DB_OPTIONS: "[1]" })).toThrow(/オブジェクト/);
+    expect(() =>
+      knexConfigFromEnv({
+        E2E_DB_CLIENT: "pg",
+        E2E_DB_HOST: "h",
+        E2E_DB_USER: "u",
+        E2E_DB_DATABASE: "d",
+        E2E_DB_PORT: "abc",
+      }),
+    ).toThrow(/E2E_DB_PORT/);
+    expect(() => knexConfigFromEnv({ E2E_DB_CLIENT: "pg", E2E_DB_USER: "u", E2E_DB_DATABASE: "d" })).toThrow(
+      /E2E_DB_HOST/,
+    );
+    expect(() =>
+      knexConfigFromEnv({
+        E2E_DB_CLIENT: "pg",
+        E2E_DB_HOST: "h",
+        E2E_DB_USER: "u",
+        E2E_DB_DATABASE: "d",
+        E2E_DB_OPTIONS: "[1]",
+      }),
+    ).toThrow(/オブジェクト/);
   });
 });
 

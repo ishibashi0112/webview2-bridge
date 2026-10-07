@@ -4,8 +4,8 @@ import {
   BridgeTimeoutError,
   isJsonRpcNotification,
   isJsonRpcResponse,
-  ListenerMap,
   type JsonRpcRequest,
+  ListenerMap,
   type Transport,
 } from "./transport.js";
 

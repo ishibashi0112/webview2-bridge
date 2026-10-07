@@ -30,7 +30,13 @@ describe("create-webview2-bridge", () => {
     expect(r.stdout).toContain("Created MyInventory in");
     expect(r.stdout).toContain("dotnet run --project dotnet/MyInventory.Host");
     const files = await readdir(path.join(dir, "my-app", "dotnet"));
-    expect(files.sort()).toEqual(["Directory.Build.props", "MyInventory.Contract", "MyInventory.Host", "MyInventory.Impl", "MyInventory.sln"]);
+    expect(files.sort()).toEqual([
+      "Directory.Build.props",
+      "MyInventory.Contract",
+      "MyInventory.Host",
+      "MyInventory.Impl",
+      "MyInventory.sln",
+    ]);
     expect(await readFile(path.join(dir, "my-app", "package.json"), "utf8")).toContain('"name": "myinventory"');
   });
 

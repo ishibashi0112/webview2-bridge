@@ -11,12 +11,12 @@
 import path from "node:path";
 import { test as base, expect, type Page } from "@playwright/test";
 import type { Knex } from "knex";
-import { createBridge, DEFAULT_BRIDGE_GLOBAL, type Bridge } from "./bridge.js";
+import { type Bridge, createBridge, DEFAULT_BRIDGE_GLOBAL } from "./bridge.js";
 import type { E2EConfig, E2EWorkerOptions, Layer, TrackSpec, TrackWhere } from "./config.js";
-import { createDb, type Db, type SnapshotSpec } from "./db/index.js";
-import { checkAllowed, describeConnection } from "./db/guard.js";
 import { knexConfigFromEnv, loadEnvFiles } from "./db/env.js";
-import { launchHost, type HostApp } from "./host.js";
+import { checkAllowed, describeConnection } from "./db/guard.js";
+import { createDb, type Db, type SnapshotSpec } from "./db/index.js";
+import { type HostApp, launchHost } from "./host.js";
 
 export interface E2ETestFixtures {
   testId: string;
@@ -69,6 +69,7 @@ export const test = base.extend<E2ETestFixtures, E2EWorkerFixtures>({
   layer: ["screen" as Layer, { option: true, scope: "worker" }],
 
   appRoot: [
+    // biome-ignore lint/correctness/noEmptyPattern: Playwright のフィクスチャは第 1 引数が分割代入でなければならない
     async ({}, use, workerInfo) => {
       const configFile = workerInfo.config.configFile;
       await use(configFile !== undefined ? path.dirname(configFile) : workerInfo.config.rootDir);
@@ -110,7 +111,10 @@ export const test = base.extend<E2ETestFixtures, E2EWorkerFixtures>({
         await use(null);
         return;
       }
-      const guard = checkAllowed(describeConnection(knexConfig.client, knexConfig.connection), cfg.db?.allowedDatabases ?? []);
+      const guard = checkAllowed(
+        describeConnection(knexConfig.client, knexConfig.connection),
+        cfg.db?.allowedDatabases ?? [],
+      );
       if (!guard.ok) throw new Error(`DB ガード: ${guard.reason}`);
       const knexModule = (await import("knex")) as unknown as { default: (config: Knex.Config) => Knex };
       const knex = knexModule.default(knexConfig as Knex.Config);
@@ -120,6 +124,7 @@ export const test = base.extend<E2ETestFixtures, E2EWorkerFixtures>({
     { scope: "worker" },
   ],
 
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright のフィクスチャは第 1 引数が分割代入でなければならない
   testId: async ({}, use) => {
     await use(makeTestId());
   },
@@ -148,7 +153,9 @@ export const test = base.extend<E2ETestFixtures, E2EWorkerFixtures>({
 
   bridge: async ({ page, layer, e2e }, use) => {
     if (layer === "screen") {
-      throw new Error("bridge フィクスチャは api / host プロジェクトでだけ使えます(screen はモック応答なので契約を直接呼ぶ意味がありません)");
+      throw new Error(
+        "bridge フィクスチャは api / host プロジェクトでだけ使えます(screen はモック応答なので契約を直接呼ぶ意味がありません)",
+      );
     }
     await use(createBridge(page, e2e?.bridgeGlobal ?? DEFAULT_BRIDGE_GLOBAL));
   },
@@ -165,7 +172,10 @@ export const test = base.extend<E2ETestFixtures, E2EWorkerFixtures>({
       maxRows: cfg.db?.maxRows,
       onWarning: (m) => warnings.push(m),
       onDiff: async (diff) => {
-        await testInfo.attach("db-diff", { body: JSON.stringify(diff, jsonReplacer, 2), contentType: "application/json" });
+        await testInfo.attach("db-diff", {
+          body: JSON.stringify(diff, jsonReplacer, 2),
+          contentType: "application/json",
+        });
       },
     });
     const track = cfg.db?.track ?? [];

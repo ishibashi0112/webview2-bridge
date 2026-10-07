@@ -12,13 +12,17 @@
     "build": "pnpm -r --filter './packages/*' build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "check": "pnpm gen:check && pnpm lint && pnpm -r typecheck && pnpm -r test",
     "gen:check": "tsx packages/gen/src/cli.ts --check",
     "gen:template": "tsx packages/gen/src/cli.ts --config templates/myapp/webview2-bridge.gen.json",
     "publish:npm": "pnpm -r --filter './packages/*' publish --access public",
     "pack:npm": "pnpm -r --filter './packages/*' exec pnpm pack --pack-destination ../../artifacts/npm"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "tsx": "^4.23.13"
+    "@biomejs/biome": "^2.5.15",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
   }
 }

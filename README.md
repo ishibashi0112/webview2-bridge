@@ -29,6 +29,8 @@ pnpm install
 pnpm gen                     # contract.ts → contract.schema.json → TS / VB を生成（gen:check で差分検査）
 pnpm test                    # gen / client / test の Vitest + apps/web の screen テスト（Playwright。Mac は初回 npx playwright install chromium）
 pnpm typecheck
+pnpm lint                    # Biome（書式 + lint）。直すのは pnpm lint:fix
+pnpm check                   # gen:check → lint → typecheck → test をまとめて。コミット前と CI はこれ
 pnpm --filter web dev        # http://localhost:5173（MemoryTransport）
 pnpm --filter web build      # → apps/web/dist（Host ビルド時に wwwroot へコピー）
 pnpm build                   # packages/* を dist/ にビルド（公開用。開発時は不要）
@@ -38,6 +40,7 @@ dotnet test  dotnet/WebView2Bridge.Contract.Tests
 dotnet build dotnet/WebView2Bridge.sln            # Host の実行は Windows のみ
 ```
 
+CI は [.github/workflows/ci.yml](.github/workflows/ci.yml)（Linux: `pnpm check` と公開用ビルド・同梱コピーの同期、Contract のビルドと xUnit / Windows: WinForms を含む sln 全体のビルド）。
 自動テストは 3 層（`apps/web/e2e/`、雛形の `e2e/README.md` 参照）: `screen`（ブラウザ + MemoryTransport。どこでも）/ `api`（実 exe の VB を契約経由で直接呼ぶ）/ `host`（実 exe の WebView2 を画面操作）。
 api / host は Windows で `pnpm --filter web test:e2e`（先に `dotnet build`、`pnpm --filter web test:doctor` で前提確認）。結果は `test-results/report.md` に出て、失敗があればクリップボードにも入る。
 VB にテストは書かない（実 exe を TypeScript から動かして確かめる）。設計は slnmix リポジトリの `docs/HANDOFF-testing-2026-09.md`。

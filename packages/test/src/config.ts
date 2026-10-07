@@ -11,8 +11,9 @@
  * host(L3: 実 exe を画面操作)。api / host は会社 PC(Windows)でしか走らない。
  * パス(exe など)は playwright.config.ts のあるディレクトリ(アプリのルート)基準。
  */
-import type { Knex } from "knex";
+
 import type { PlaywrightTestConfig, PlaywrightTestOptions, PlaywrightWorkerOptions } from "@playwright/test";
+import type { Knex } from "knex";
 
 export type Layer = "screen" | "api" | "host";
 export const LAYERS: readonly Layer[] = ["screen", "api", "host"];
@@ -106,7 +107,10 @@ export interface E2EWorkerOptions {
  * - Windows は既定で Edge(channel "msedge")。E2E_BROWSER_CHANNEL で変えられる("" で Playwright 同梱の Chromium)
  * - それ以外は Playwright 同梱の Chromium(`npx playwright install chromium`)
  */
-export function browserUse(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): Partial<PlaywrightWorkerOptions> {
+export function browserUse(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): Partial<PlaywrightWorkerOptions> {
   const executablePath = env["E2E_BROWSER_EXECUTABLE"];
   if (executablePath !== undefined && executablePath !== "") {
     return { browserName: "chromium", launchOptions: { executablePath } };
@@ -118,7 +122,10 @@ export function browserUse(env: NodeJS.ProcessEnv = process.env, platform: NodeJ
   return platform === "win32" ? { browserName: "chromium", channel: "msedge" } : { browserName: "chromium" };
 }
 
-export type E2EPlaywrightConfig = PlaywrightTestConfig<PlaywrightTestOptions, PlaywrightWorkerOptions & E2EWorkerOptions>;
+export type E2EPlaywrightConfig = PlaywrightTestConfig<
+  PlaywrightTestOptions,
+  PlaywrightWorkerOptions & E2EWorkerOptions
+>;
 
 export interface PlaywrightConfigOptions {
   /** テストの置き場(既定 "e2e")。配下に screen / api / host */

@@ -50,7 +50,10 @@ export function refName(ref: string): string {
 
 /** ジェネレータが対応していない契約に出会ったときのエラー。`path` は契約内の位置 */
 export class GenerateError extends Error {
-  constructor(message: string, readonly path?: string) {
+  constructor(
+    message: string,
+    readonly path?: string,
+  ) {
     super(path ? `${message} (at ${path})` : message);
     this.name = "GenerateError";
   }

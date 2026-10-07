@@ -1,6 +1,6 @@
-import { camelCase, pascalCase } from "./naming.js";
-import { DEFS_PREFIX, refName, type ContractSchema, type JsonSchema } from "./schema.js";
 import type { EmittedFile } from "./emitted.js";
+import { camelCase, pascalCase } from "./naming.js";
+import { type ContractSchema, DEFS_PREFIX, type JsonSchema, refName } from "./schema.js";
 
 export interface EmitOpenApiOptions {
   /** `info.title`（既定 "webview2-bridge contract"） */
@@ -98,7 +98,8 @@ export function emitOpenApi(schema: ContractSchema, options: EmitOpenApiOptions 
       get: {
         operationId: "events",
         tags: ["events"],
-        summary: "Server-Sent Events. Each `data:` line is one JSON-RPC notification (same as the postMessage wire format)",
+        summary:
+          "Server-Sent Events. Each `data:` line is one JSON-RPC notification (same as the postMessage wire format)",
         responses: {
           "200": {
             description: "Event stream",
@@ -117,7 +118,11 @@ export function emitOpenApi(schema: ContractSchema, options: EmitOpenApiOptions 
     type: "object",
     description: "JSON-RPC 2.0 error object. Same shape as the `error` member over postMessage",
     properties: {
-      code: { type: "integer", description: "-32700 Parse, -32600 Invalid Request, -32601 Method not found, -32602 Invalid params, -32000.. application" },
+      code: {
+        type: "integer",
+        description:
+          "-32700 Parse, -32600 Invalid Request, -32601 Method not found, -32602 Invalid params, -32000.. application",
+      },
       message: { type: "string" },
       data: { description: "Unhandled server exceptions put the exception type name here" },
     },
@@ -147,14 +152,20 @@ export function emitOpenApi(schema: ContractSchema, options: EmitOpenApiOptions 
     components: {
       schemas: components,
       responses: {
-        InvalidParams: errorResponse("Invalid params (JSON-RPC -32602), invalid request (-32600) or parse error (-32700)"),
+        InvalidParams: errorResponse(
+          "Invalid params (JSON-RPC -32602), invalid request (-32600) or parse error (-32700)",
+        ),
         MethodNotFound: errorResponse("Method not found (JSON-RPC -32601)"),
         ServerError: errorResponse("Unhandled server error (JSON-RPC -32000 or other application-defined code)"),
       },
     },
     "x-webview2-bridge": {
       contractVersion: schema.contractVersion,
-      events: eventNames.map((name) => ({ name, method: `event.${name}`, schema: `${COMPONENTS_PREFIX}${pascalCase(name)}Event` })),
+      events: eventNames.map((name) => ({
+        name,
+        method: `event.${name}`,
+        schema: `${COMPONENTS_PREFIX}${pascalCase(name)}Event`,
+      })),
     },
   };
 

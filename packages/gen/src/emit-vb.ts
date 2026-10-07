@@ -1,6 +1,6 @@
-import { pascalCase, toIdentifier, vbEscape } from "./naming.js";
-import { GenerateError, refName, type ContractSchema, type JsonSchema } from "./schema.js";
 import type { EmittedFile } from "./emitted.js";
+import { pascalCase, toIdentifier, vbEscape } from "./naming.js";
+import { type ContractSchema, GenerateError, type JsonSchema, refName } from "./schema.js";
 
 export interface EmitVbOptions {
   /** 生成物を置く名前空間（`Namespace Global.<namespace>`）。RootNamespace とは独立 */
@@ -405,7 +405,9 @@ class VbContext {
     out.push(`Namespace Global.${this.options.namespace}`);
     out.push("");
     for (const ns of this.namespaces()) {
-      out.push(`    ''' <summary>"${ns}.*" メソッドの実装。人間が Implements して WebView2Bridge.Impl に置く</summary>`);
+      out.push(
+        `    ''' <summary>"${ns}.*" メソッドの実装。人間が Implements して WebView2Bridge.Impl に置く</summary>`,
+      );
       out.push(`    Public Interface ${interfaceName(ns)}`);
       const ms = this.methods.filter((m) => m.ns === ns);
       ms.forEach((m, i) => {
@@ -428,7 +430,9 @@ class VbContext {
     out.push("");
     out.push(`Namespace Global.${this.options.namespace}`);
     out.push("");
-    out.push(`    ''' <summary>契約の実装を ${this.dispatcherClass} に登録する拡張メソッド。dispatcher.Register(api) と書ける</summary>`);
+    out.push(
+      `    ''' <summary>契約の実装を ${this.dispatcherClass} に登録する拡張メソッド。dispatcher.Register(api) と書ける</summary>`,
+    );
     out.push(`    Public Module ${this.dispatcherClass}Extensions`);
     out.push("");
     out.push(`        ''' <summary>契約に含まれる全メソッド名</summary>`);
@@ -461,7 +465,9 @@ class VbContext {
     out.push("");
     out.push(`Namespace Global.${this.options.namespace}`);
     out.push("");
-    out.push(`    ''' <summary>Host → Web の型付きイベント発行ヘルパ。内部で ${this.emitterInterface}.Emit("event.&lt;name&gt;", payload) を呼ぶ</summary>`);
+    out.push(
+      `    ''' <summary>Host → Web の型付きイベント発行ヘルパ。内部で ${this.emitterInterface}.Emit("event.&lt;name&gt;", payload) を呼ぶ</summary>`,
+    );
     out.push(`    Public Class ${this.eventsClass}`);
     out.push(`        Private ReadOnly _emitter As ${this.emitterInterface}`);
     out.push("");
@@ -517,10 +523,7 @@ function isAnySchema(s: JsonSchema): boolean {
  * `type: [X, "null"]` と `anyOf: [X, {type:"null"}]` を「null 許容の X」に正規化する。
  * `inner` が返ったら、それを再帰的に解決する。
  */
-function unwrapNullable(
-  s: JsonSchema,
-  path: string,
-): { types: string[]; nullable: boolean; inner?: JsonSchema } {
+function unwrapNullable(s: JsonSchema, path: string): { types: string[]; nullable: boolean; inner?: JsonSchema } {
   const union = s.anyOf ?? s.oneOf;
   if (union) {
     const nonNull = union.filter((u) => u.type !== "null");

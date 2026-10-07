@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReport, stripAnsi, type ReportTestEntry } from "../src/reporter.js";
+import { buildReport, type ReportTestEntry, stripAnsi } from "../src/reporter.js";
 
 const base = (over: Partial<ReportTestEntry>): ReportTestEntry => ({
   project: "host",
@@ -28,13 +28,24 @@ describe("buildReport", () => {
       input([
         base({
           status: "failed",
-          errors: ["\u001b[31mError: expect(received).toHaveLength(expected)\u001b[0m\nExpected length: 1\nReceived length: 0"],
+          errors: [
+            "\u001b[31mError: expect(received).toHaveLength(expected)\u001b[0m\nExpected length: 1\nReceived length: 0",
+          ],
           attachments: [
             { name: "screenshot", contentType: "image/png", path: "/app/test-results/x/test-failed-1.png" },
-            { name: "db-diff", contentType: "application/json", text: JSON.stringify({ Orders: { inserted: [], updated: [], deleted: [] } }) },
+            {
+              name: "db-diff",
+              contentType: "application/json",
+              text: JSON.stringify({ Orders: { inserted: [], updated: [], deleted: [] } }),
+            },
           ],
         }),
-        base({ project: "screen", title: "空の keyword は入力検証エラー", file: "/app/e2e/screen/search.spec.ts", line: 3 }),
+        base({
+          project: "screen",
+          title: "空の keyword は入力検証エラー",
+          file: "/app/e2e/screen/search.spec.ts",
+          line: 3,
+        }),
         base({ project: "screen", title: "skipped one", status: "skipped" }),
       ]),
     );
@@ -69,7 +80,15 @@ describe("buildReport", () => {
   });
 
   it("成功したテストの後片付け失敗は別節に出す", () => {
-    const text = buildReport(input([base({ attachments: [{ name: "db-cleanup", contentType: "application/json", text: '{"failures":[{"table":"Orders"}]}' }] })]));
+    const text = buildReport(
+      input([
+        base({
+          attachments: [
+            { name: "db-cleanup", contentType: "application/json", text: '{"failures":[{"table":"Orders"}]}' },
+          ],
+        }),
+      ]),
+    );
     expect(text).toContain("## 後片付けの注意");
   });
 
@@ -80,10 +99,33 @@ describe("buildReport", () => {
 
 describe("buildReport: テキスト添付", () => {
   it("text/markdown の添付(error-context 等)は本文を取り込み、長ければ切る", () => {
-    const text = buildReport(input([base({ status: "failed", errors: ["e"], attachments: [{ name: "error-context", contentType: "text/markdown", path: "/app/test-results/x/error-context.md", text: "- heading" }] })]));
+    const text = buildReport(
+      input([
+        base({
+          status: "failed",
+          errors: ["e"],
+          attachments: [
+            {
+              name: "error-context",
+              contentType: "text/markdown",
+              path: "/app/test-results/x/error-context.md",
+              text: "- heading",
+            },
+          ],
+        }),
+      ]),
+    );
     expect(text).toContain("- error-context (`test-results/x/error-context.md`):");
     expect(text).toContain("- heading");
-    const long = buildReport(input([base({ status: "failed", errors: ["e"], attachments: [{ name: "error-context", contentType: "text/markdown", text: "y".repeat(10_000) }] })]));
+    const long = buildReport(
+      input([
+        base({
+          status: "failed",
+          errors: ["e"],
+          attachments: [{ name: "error-context", contentType: "text/markdown", text: "y".repeat(10_000) }],
+        }),
+      ]),
+    );
     expect(long).toContain("…(省略)");
   });
 });

@@ -2,7 +2,7 @@
  * WinForms ホスト exe を CDP(Chrome DevTools Protocol)有効で起動し、Playwright から WebView2 に接続する。
  * VB 側は無改修: WebView2 は環境変数 WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS を読む。
  */
-import { execFile, spawn, type ChildProcess } from "node:child_process";
+import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -59,7 +59,9 @@ export async function launchHost(options: LaunchHostOptions): Promise<HostApp> {
     throw new HostLaunchError(`ホスト exe が見つかりません: ${exe}\n  先に dotnet build(Debug)を実行してください`);
   }
   if (await probeCdp(cdpUrl)) {
-    throw new HostLaunchError(`ポート ${port} で既に何かが CDP を待ち受けています(前回の exe が残っていませんか)。終了するか e2e.config.ts の host.cdpPort を変えてください`);
+    throw new HostLaunchError(
+      `ポート ${port} で既に何かが CDP を待ち受けています(前回の exe が残っていませんか)。終了するか e2e.config.ts の host.cdpPort を変えてください`,
+    );
   }
 
   const userDataDir = mkdtempSync(path.join(tmpdir(), "wv2b-e2e-"));
@@ -76,7 +78,9 @@ export async function launchHost(options: LaunchHostOptions): Promise<HostApp> {
   child.on("exit", (code, signal) => {
     exited = { code, signal };
   });
-  const spawnError = new Promise<never>((_, reject) => child.on("error", (e) => reject(new HostLaunchError(`exe を起動できません: ${e.message}`))));
+  const spawnError = new Promise<never>((_, reject) =>
+    child.on("error", (e) => reject(new HostLaunchError(`exe を起動できません: ${e.message}`))),
+  );
 
   const cleanupOnFailure = async (): Promise<void> => {
     await killTree(child);
@@ -88,10 +92,14 @@ export async function launchHost(options: LaunchHostOptions): Promise<HostApp> {
   try {
     while (!(await probeCdp(cdpUrl))) {
       if (exited !== undefined) {
-        throw new HostLaunchError(`exe が起動直後に終了しました(code=${exited.code ?? "?"} signal=${exited.signal ?? "-"})。exe を手で起動してエラーを確認してください`);
+        throw new HostLaunchError(
+          `exe が起動直後に終了しました(code=${exited.code ?? "?"} signal=${exited.signal ?? "-"})。exe を手で起動してエラーを確認してください`,
+        );
       }
       if (Date.now() > deadline) {
-        throw new HostLaunchError(`${timeoutMs}ms 待っても CDP(${cdpUrl})が開きません。exe が WebView2 を初期化できているか(WebView2 Runtime の有無)を確認してください`);
+        throw new HostLaunchError(
+          `${timeoutMs}ms 待っても CDP(${cdpUrl})が開きません。exe が WebView2 を初期化できているか(WebView2 Runtime の有無)を確認してください`,
+        );
       }
       await Promise.race([sleep(250), spawnError]);
     }
@@ -106,7 +114,9 @@ export async function launchHost(options: LaunchHostOptions): Promise<HostApp> {
     while (page === undefined) {
       if (Date.now() > deadline) {
         await browser.close();
-        throw new HostLaunchError("WebView2 に接続できましたがページが開きません(MainForm が WebView2 を初期化しているか確認してください)");
+        throw new HostLaunchError(
+          "WebView2 に接続できましたがページが開きません(MainForm が WebView2 を初期化しているか確認してください)",
+        );
       }
       await sleep(250);
       page = pickPage(context.pages(), options.devUrl);

@@ -1,13 +1,21 @@
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { PassThrough, type Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { PassThrough, Readable, Writable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bundledName, listTemplateFiles } from "../scripts/sync-template.mjs";
 import type { GenerateConfig } from "../src/generate.js";
 import { generate } from "../src/generate.js";
-import { askInitOptions, bundledTemplateDir, defaultAppName, renewProjectGuids, scaffold, validateAppName, TEMPLATE_NAME } from "../src/init.js";
+import {
+  askInitOptions,
+  bundledTemplateDir,
+  defaultAppName,
+  renewProjectGuids,
+  scaffold,
+  TEMPLATE_NAME,
+  validateAppName,
+} from "../src/init.js";
 import { genPackageVersion } from "../src/vb-runtime.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -41,9 +49,13 @@ describe("bundled template", () => {
 
   it("pins this package's version in the template package.json files", async () => {
     const version = genPackageVersion();
-    const root = JSON.parse(await readFile(path.join(bundled, "package.json"), "utf8")) as { devDependencies: Record<string, string> };
+    const root = JSON.parse(await readFile(path.join(bundled, "package.json"), "utf8")) as {
+      devDependencies: Record<string, string>;
+    };
     expect(root.devDependencies["@ishibashi0112/webview2-bridge-gen"]).toBe(`^${version}`);
-    const web = JSON.parse(await readFile(path.join(bundled, "web/package.json"), "utf8")) as { dependencies: Record<string, string> };
+    const web = JSON.parse(await readFile(path.join(bundled, "web/package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    };
     expect(web.dependencies["@ishibashi0112/webview2-bridge-client"]).toBe(`^${version}`);
   });
 
@@ -59,7 +71,9 @@ describe("bundled template", () => {
           .replace("defineContract(", "(")
           .replace(/^export type Contract = .*$/m, ""),
       );
-      const config = JSON.parse(await readFile(path.join(bundled, "webview2-bridge.gen.json"), "utf8")) as GenerateConfig;
+      const config = JSON.parse(
+        await readFile(path.join(bundled, "webview2-bridge.gen.json"), "utf8"),
+      ) as GenerateConfig;
       const result = await generate(
         { ...config, contract: path.join(dir, "contract.ts") },
         { cwd: bundled, check: true },
@@ -99,6 +113,8 @@ describe("scaffold", () => {
     expect(files).not.toContain("_gitignore");
     expect(files).toContain(".npmrc");
     expect(files).not.toContain("_npmrc");
+    expect(files).toContain("biome.json");
+    expect(files).not.toContain("_biome.json");
     // 生成物を LF に固定する（Windows の core.autocrlf=true で gen:check が誤検知しないように）
     expect(files).toContain(".gitattributes");
     const gitattributes = await readFile(path.join(target, ".gitattributes"), "utf8");
@@ -114,7 +130,9 @@ describe("scaffold", () => {
     expect(pkg.name).toBe("inventoryapp");
     const genConfig = await readFile(path.join(target, "webview2-bridge.gen.json"), "utf8");
     expect(genConfig).toContain('"namespace": "InventoryApp.Contract"');
-    expect(await readFile(path.join(target, "dotnet/InventoryApp.Host/MainForm.vb"), "utf8")).toContain("Imports InventoryApp.Contract");
+    expect(await readFile(path.join(target, "dotnet/InventoryApp.Host/MainForm.vb"), "utf8")).toContain(
+      "Imports InventoryApp.Contract",
+    );
     // ランタイムの名前空間は変えない
     expect(await readFile(path.join(target, "dotnet/InventoryApp.Contract/Runtime/Dispatcher.vb"), "utf8")).toContain(
       "Namespace Global.WebView2Bridge.Runtime",
@@ -126,7 +144,8 @@ describe("scaffold", () => {
     await scaffold({ targetDir: target, name: "Foo" });
     const template = await readFile(path.join(bundled, "dotnet/MyApp.sln"), "utf8");
     const out = await readFile(path.join(target, "dotnet/Foo.sln"), "utf8");
-    const guidsOf = (s: string): string[] => [...s.matchAll(/^Project\("\{([0-9A-F-]+)\}"\).*"\{([0-9A-F-]+)\}"$/gim)].map((m) => m[2]!);
+    const guidsOf = (s: string): string[] =>
+      [...s.matchAll(/^Project\("\{([0-9A-F-]+)\}"\).*"\{([0-9A-F-]+)\}"$/gim)].map((m) => m[2]!);
     const typeOf = (s: string): string[] => [...s.matchAll(/^Project\("\{([0-9A-F-]+)\}"\)/gim)].map((m) => m[1]!);
     expect(guidsOf(out)).toHaveLength(3);
     expect(typeOf(out)).toEqual(typeOf(template));

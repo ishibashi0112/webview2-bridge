@@ -81,9 +81,16 @@ export async function doctor(argv: string[]): Promise<number> {
     checks.push({
       name: "Playwright とブラウザ (screen 用)",
       run: async () => {
-        const pw = (await import("@playwright/test")) as unknown as { chromium: { launch(o: Record<string, unknown>): Promise<{ version(): string; close(): Promise<void> }> }; default?: unknown };
+        const pw = (await import("@playwright/test")) as unknown as {
+          chromium: { launch(o: Record<string, unknown>): Promise<{ version(): string; close(): Promise<void> }> };
+          default?: unknown;
+        };
         const use = browserUse();
-        const launchOptions = { headless: true, ...(use.channel !== undefined && { channel: use.channel }), ...(use.launchOptions ?? {}) };
+        const launchOptions = {
+          headless: true,
+          ...(use.channel !== undefined && { channel: use.channel }),
+          ...(use.launchOptions ?? {}),
+        };
         const browser = await pw.chromium.launch(launchOptions);
         const version = browser.version();
         await browser.close();
@@ -96,7 +103,9 @@ export async function doctor(argv: string[]): Promise<number> {
       name: "ホスト exe の起動と CDP 接続 (api / host 用)",
       run: async () => {
         if (cfg.host === undefined) return "e2e.config.ts に host が無いためスキップ";
-        const pw = (await import("@playwright/test")) as unknown as { chromium: Parameters<typeof launchHost>[0]["chromium"] };
+        const pw = (await import("@playwright/test")) as unknown as {
+          chromium: Parameters<typeof launchHost>[0]["chromium"];
+        };
         const app = await launchHost({
           exe: path.resolve(appRoot, cfg.host.exe),
           devUrl: cfg.host.devUrl ?? cfg.web.url,
@@ -109,7 +118,10 @@ export async function doctor(argv: string[]): Promise<number> {
           const url = app.page.url();
           const title = await app.page.title().catch(() => "");
           const exposed = await app.page
-            .evaluate((g) => typeof (window as unknown as Record<string, unknown>)[g] === "object", cfg.bridgeGlobal ?? "__webview2Bridge")
+            .evaluate(
+              (g) => typeof (window as unknown as Record<string, unknown>)[g] === "object",
+              cfg.bridgeGlobal ?? "__webview2Bridge",
+            )
             .catch(() => false);
           return `接続 OK (${url}${title !== "" ? ` "${title}"` : ""}, window.${cfg.bridgeGlobal ?? "__webview2Bridge"}: ${exposed ? "公開あり" : "未公開 — dev サーバーが起動しているか、bridge.ts の公開行を確認"})`;
         } finally {
@@ -153,7 +165,11 @@ export async function doctor(argv: string[]): Promise<number> {
       console.log(`✗ ${c.name}: ${errorMessage(e)}`);
     }
   }
-  console.log(failures === 0 ? "\nすべて通りました。pnpm test:all を実行できます" : `\n${failures} 件が通りませんでした。上の理由を直してから再実行してください`);
+  console.log(
+    failures === 0
+      ? "\nすべて通りました。pnpm test:all を実行できます"
+      : `\n${failures} 件が通りませんでした。上の理由を直してから再実行してください`,
+  );
   return failures === 0 ? 0 : 1;
 }
 

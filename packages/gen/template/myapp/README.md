@@ -10,6 +10,7 @@ myapp/
   package.json                 # pnpm スクリプト（gen / gen:check / dev / build:web）
   pnpm-workspace.yaml          # web を workspace に。esbuild の postinstall 許可（必須）
   webview2-bridge.gen.json     # ジェネレータ設定（出力先・名前空間）
+  biome.json                   # 整形と lint（Biome）。`pnpm lint` / `pnpm lint:fix`
   contract/contract.ts         # zod による契約（唯一の正）。手で書く
   contract/contract.schema.json# 生成
   contract/openapi.json        # 生成（同じ契約を HTTP API として提供するときの OpenAPI 3.1。将来サーバーを VB 以外に移すための入力）
@@ -86,7 +87,8 @@ pnpm test:all      # 会社 PC で打つ 1 コマンド
 3. `web/src/bridge.ts` のモックに同じメソッドを足し、画面を作る（ブラウザだけで進む）
 4. `dotnet/MyApp.Impl/` に実装を書く。新しい namespace を足したら `MainForm.vb` の `dispatcher.Register(...)` も 1 行足す
 5. `e2e/screen/` に画面のテスト、`e2e/api/` に契約メソッドのテストを足す(`pnpm test` はどこでも走る)
-6. Windows で `pnpm test:all`(実機の api / host まで自動で確認)
+6. `pnpm check`(gen:check → lint → typecheck → screen テスト)。コミット前に打つ 1 コマンド。CI があればこの 1 行を呼ぶだけでよい(GitHub Actions でも GitLab でも、何も無ければ手で)
+7. Windows で `pnpm test:all`(実機の api / host まで自動で確認)
 
 ## Visual Studio はいつ要るか
 

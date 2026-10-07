@@ -30,7 +30,11 @@ export async function writeClipboard(text: string): Promise<void> {
     try {
       writeFileSync(file, text, "utf8");
       const quoted = `'${file.replaceAll("'", "''")}'`;
-      await execFileP("powershell", ["-NoProfile", "-Command", `Get-Content -Raw -Encoding UTF8 -LiteralPath ${quoted} | Set-Clipboard`]);
+      await execFileP("powershell", [
+        "-NoProfile",
+        "-Command",
+        `Get-Content -Raw -Encoding UTF8 -LiteralPath ${quoted} | Set-Clipboard`,
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

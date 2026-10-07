@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { GenerateError, defineContract, emitVb, toSchema } from "../src/index.js";
+import { defineContract, emitVb, GenerateError, toSchema } from "../src/index.js";
 import { kitchenSinkContract, sampleContract } from "./fixtures.js";
 
 const opts = { namespace: "WebView2Bridge.Contract" };
@@ -27,9 +27,13 @@ describe("emitVb", () => {
 
   it("maps optional/nullable value types to Nullable(Of T) and ignores null for optional props", () => {
     const dto = emitAll(kitchenSinkContract)["Dto.vb"]!;
-    expect(dto).toContain('<JsonProperty("page", NullValueHandling:=NullValueHandling.Ignore)>\n        Public Property Page As Nullable(Of Integer)');
+    expect(dto).toContain(
+      '<JsonProperty("page", NullValueHandling:=NullValueHandling.Ignore)>\n        Public Property Page As Nullable(Of Integer)',
+    );
     expect(dto).toContain('<JsonProperty("nullableInt")>\n        Public Property NullableInt As Nullable(Of Integer)');
-    expect(dto).toContain('<JsonProperty("optionalNullableInt", NullValueHandling:=NullValueHandling.Ignore)>\n        Public Property OptionalNullableInt As Nullable(Of Integer)');
+    expect(dto).toContain(
+      '<JsonProperty("optionalNullableInt", NullValueHandling:=NullValueHandling.Ignore)>\n        Public Property OptionalNullableInt As Nullable(Of Integer)',
+    );
     expect(dto).toContain('<JsonProperty("zip")>\n        Public Property Zip As String');
   });
 
@@ -55,7 +59,9 @@ describe("emitVb", () => {
     expect(dto).toContain("Public Class CustomerChild");
     expect(dto).toContain("Public Property Children As List(Of CustomerChild) = New List(Of CustomerChild)()");
     expect(dto).toContain("Public Class CustomerMeta");
-    expect(dto).toContain("Public Property Attributes As Dictionary(Of String, String) = New Dictionary(Of String, String)()");
+    expect(dto).toContain(
+      "Public Property Attributes As Dictionary(Of String, String) = New Dictionary(Of String, String)()",
+    );
     expect(dto).toContain("Public Property Extra As JToken");
   });
 
@@ -66,7 +72,9 @@ describe("emitVb", () => {
     expect(d).toContain("Public Module DispatcherExtensions");
     expect(d).toContain("<Extension>\n        Public Sub Register(dispatcher As Dispatcher, api As ICustomersApi)");
     expect(d).toContain("<Extension>\n        Public Sub Register(dispatcher As Dispatcher, api As ISystemApi)");
-    expect(d).toContain('dispatcher.RegisterHandler(Of CustomersSaveRequest, CustomersSaveResponse)("customers.save", AddressOf api.Save)');
+    expect(d).toContain(
+      'dispatcher.RegisterHandler(Of CustomersSaveRequest, CustomersSaveResponse)("customers.save", AddressOf api.Save)',
+    );
     expect(d).not.toContain("Partial Public Class");
   });
 

@@ -1,0 +1,11 @@
+{
+  // 整形と lint は Biome(biome.json)。保存時に整形して、人や AI セッションごとの書式の揺れを無くす
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit"
+  },
+  "[vb]": {
+    "editor.defaultFormatter": null
+  }
+}

@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { BridgeValidationError, MemoryTransport, createClient, type MemoryHandlers, type Transport } from "../src/index.js";
-import { contract, parts, type Contract } from "./fixtures.js";
+import {
+  BridgeValidationError,
+  createClient,
+  type MemoryHandlers,
+  MemoryTransport,
+  type Transport,
+} from "../src/index.js";
+import { type Contract, contract, parts } from "./fixtures.js";
 
 const handlers: MemoryHandlers<Contract> = {
   parts: {

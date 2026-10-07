@@ -69,7 +69,8 @@ export function diffRows(before: readonly Row[], after: readonly Row[], key: rea
     for (const col of columns) {
       if (!sameValue(prev[col], row[col])) changed[col] = { before: prev[col], after: row[col] };
     }
-    if (Object.keys(changed).length > 0) result.updated.push({ key: pickKey(row, key), before: prev, after: row, changed });
+    if (Object.keys(changed).length > 0)
+      result.updated.push({ key: pickKey(row, key), before: prev, after: row, changed });
   }
   for (const [k, row] of beforeMap) {
     if (!seen.has(k)) result.deleted.push(row);

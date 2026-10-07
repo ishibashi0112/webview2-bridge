@@ -16,7 +16,9 @@ export interface ConnectionDescription {
 }
 
 export function isDbClient(value: unknown): value is DbClient {
-  return value === "mssql" || value === "oracledb" || value === "pg" || value === "mysql2" || value === "better-sqlite3";
+  return (
+    value === "mssql" || value === "oracledb" || value === "pg" || value === "mysql2" || value === "better-sqlite3"
+  );
 }
 
 function str(value: unknown): string | undefined {
@@ -65,7 +67,12 @@ export interface GuardResult {
 
 export function checkAllowed(description: ConnectionDescription, allowedDatabases: readonly string[]): GuardResult {
   if (allowedDatabases.length === 0) {
-    return { ok: false, description, reason: "allowedDatabases が空です。テスト DB の名前を e2e.config.ts の db.allowedDatabases に書いてください(本番 DB に向けて走らせないためのガードです)" };
+    return {
+      ok: false,
+      description,
+      reason:
+        "allowedDatabases が空です。テスト DB の名前を e2e.config.ts の db.allowedDatabases に書いてください(本番 DB に向けて走らせないためのガードです)",
+    };
   }
   const db = description.database.toLowerCase();
   const hostDb = description.host !== undefined ? `${description.host.toLowerCase()}/${db}` : undefined;

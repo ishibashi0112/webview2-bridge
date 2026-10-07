@@ -21,7 +21,10 @@ describe("playwrightConfig", () => {
     expect(c.reporter).toEqual([["list"], ["@ishibashi0112/webview2-bridge-test/reporter", {}]]);
   });
   it("overrides は use をマージし、projects は差し替え", () => {
-    const c = playwrightConfig(e2e, { testDir: "tests", overrides: { retries: 2, use: { trace: "on" }, projects: [{ name: "only" }] } });
+    const c = playwrightConfig(e2e, {
+      testDir: "tests",
+      overrides: { retries: 2, use: { trace: "on" }, projects: [{ name: "only" }] },
+    });
     expect(c.retries).toBe(2);
     expect(c.use?.trace).toBe("on");
     expect(c.use?.e2e).toBe(e2e);
@@ -32,12 +35,18 @@ describe("playwrightConfig", () => {
 
 describe("browserUse", () => {
   it("E2E_BROWSER_EXECUTABLE があればそれ", () => {
-    expect(browserUse({ E2E_BROWSER_EXECUTABLE: "/opt/chrome" }, "linux")).toEqual({ browserName: "chromium", launchOptions: { executablePath: "/opt/chrome" } });
+    expect(browserUse({ E2E_BROWSER_EXECUTABLE: "/opt/chrome" }, "linux")).toEqual({
+      browserName: "chromium",
+      launchOptions: { executablePath: "/opt/chrome" },
+    });
   });
   it("Windows は既定で Edge、E2E_BROWSER_CHANNEL で変えられる", () => {
     expect(browserUse({}, "win32")).toEqual({ browserName: "chromium", channel: "msedge" });
     expect(browserUse({ E2E_BROWSER_CHANNEL: "" }, "win32")).toEqual({ browserName: "chromium" });
-    expect(browserUse({ E2E_BROWSER_CHANNEL: "chrome" }, "darwin")).toEqual({ browserName: "chromium", channel: "chrome" });
+    expect(browserUse({ E2E_BROWSER_CHANNEL: "chrome" }, "darwin")).toEqual({
+      browserName: "chromium",
+      channel: "chrome",
+    });
     expect(browserUse({}, "darwin")).toEqual({ browserName: "chromium" });
   });
 });
@@ -48,7 +57,10 @@ describe("fixtures helpers", () => {
     expect(makeTestId()).toMatch(/^E2E-\d{8}-\d{4}-[0-9a-z]{1,4}$/);
   });
   it("resolveTrackWhere は {testId} を置換し、関数には testId を渡す", () => {
-    expect(resolveTrackWhere({ CustomerCode: "{testId}-C1", Qty: 1 }, "E2E-1")).toEqual({ CustomerCode: "E2E-1-C1", Qty: 1 });
+    expect(resolveTrackWhere({ CustomerCode: "{testId}-C1", Qty: 1 }, "E2E-1")).toEqual({
+      CustomerCode: "E2E-1-C1",
+      Qty: 1,
+    });
     const fn = resolveTrackWhere((qb, id) => ({ id, qb }) as never, "E2E-2");
     expect(typeof fn).toBe("function");
     expect((fn as (qb: unknown) => unknown)("QB")).toEqual({ id: "E2E-2", qb: "QB" });

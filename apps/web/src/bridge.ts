@@ -1,5 +1,5 @@
-import { HttpTransport, MemoryTransport, createClient, selectTransport } from "@ishibashi0112/webview2-bridge-client";
-import { contract, type Contract } from "@webview2-bridge/contract";
+import { createClient, HttpTransport, MemoryTransport, selectTransport } from "@ishibashi0112/webview2-bridge-client";
+import { type Contract, contract } from "@webview2-bridge/contract";
 import { handlers } from "./mock/handlers";
 
 // transport の選択:

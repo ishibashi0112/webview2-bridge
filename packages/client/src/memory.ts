@@ -1,10 +1,10 @@
 import type { z } from "zod";
 import {
   BridgeError,
+  type ContractShape,
   eventMethod,
   JsonRpcErrorCodes,
   ListenerMap,
-  type ContractShape,
   type Transport,
 } from "./transport.js";
 

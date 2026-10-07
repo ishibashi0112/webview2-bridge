@@ -1,5 +1,11 @@
-import { HttpTransport, MemoryTransport, createClient, selectTransport, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
-import { contract, type Contract } from "../../contract/contract";
+import {
+  createClient,
+  HttpTransport,
+  type MemoryHandlers,
+  MemoryTransport,
+  selectTransport,
+} from "@ishibashi0112/webview2-bridge-client";
+import { type Contract, contract } from "../../contract/contract";
 
 // ブラウザ単体（pnpm dev）で動かすためのモック。VB 側 CustomersApi と振る舞いを揃える
 const customers = [

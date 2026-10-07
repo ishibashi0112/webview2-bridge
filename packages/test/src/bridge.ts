@@ -54,7 +54,13 @@ export function createBridge(page: Page, globalName: string = DEFAULT_BRIDGE_GLO
         async ({ g, method, input }) => {
           const root = (window as unknown as Record<string, unknown>)[g];
           if (root === undefined || root === null) {
-            return { ok: false, error: { name: "BridgeNotExposed", message: `window.${g} がありません。アプリの bridge.ts で開発ビルド時にクライアントを公開してください` } };
+            return {
+              ok: false,
+              error: {
+                name: "BridgeNotExposed",
+                message: `window.${g} がありません。アプリの bridge.ts で開発ビルド時にクライアントを公開してください`,
+              },
+            };
           }
           const [ns, name, ...rest] = method.split(".");
           const nsObj = (root as Record<string, unknown>)[ns ?? ""];

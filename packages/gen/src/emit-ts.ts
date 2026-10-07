@@ -1,6 +1,6 @@
-import { isTsReserved, pascalCase } from "./naming.js";
-import { GenerateError, refName, type ContractSchema, type JsonSchema } from "./schema.js";
 import type { EmittedFile } from "./emitted.js";
+import { isTsReserved, pascalCase } from "./naming.js";
+import { type ContractSchema, GenerateError, type JsonSchema, refName } from "./schema.js";
 
 export interface EmitTsOptions {
   /** 契約モジュールの import 指定子（例: "@webview2-bridge/contract"） */
