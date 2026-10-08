@@ -44,6 +44,7 @@ VB にテストは書かない（実 exe を TypeScript から動かして確か
 
 Windows で Host を Vite dev server につなぐ場合は、Debug ビルドで環境変数 `WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` を設定して起動する。
 環境変数なしで起動すると exe 隣の `wwwroot`（`pnpm --filter web build` の `dist` をビルド時にコピー）を `https://app.local/` から読む。
+F12（開発者ツール）と F5 / Ctrl+R（再読込）などブラウザのショートカットは開発モード（Debug ビルド、または Release で環境変数 `WEBVIEW2_BRIDGE_DEV=1`）のときだけ効く。
 
 ## 別のアプリから使う
 

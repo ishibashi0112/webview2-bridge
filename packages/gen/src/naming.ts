@@ -13,12 +13,64 @@ export function camelCase(s: string): string {
   return p.charAt(0).toLowerCase() + p.slice(1);
 }
 
-/** 先頭が数字なら `_` を付け、識別子として成立させる */
+/**
+ * 任意の文字列から VB の識別子を作る。
+ * - 英数字を含む: PascalCase（先頭が数字なら `_` を付ける）
+ * - 空文字: `Empty`
+ * - 記号・空白だけ: 文字ごとの名前をつなぐ（`-` → `Hyphen`、`*` → `Asterisk`、`<=` → `LessThanEqual`）。
+ *   ASCII に無い文字はコードポイント（`★` → `U2605`）
+ * `_` 単独は VB では行継続文字で識別子にならないので、どの入力でも返さない（enum の空文字で起きたコンパイルエラーの対策）
+ */
 export function toIdentifier(s: string): string {
   const p = pascalCase(s);
-  if (p.length === 0) return "_";
+  if (p.length === 0) return symbolIdentifier(s);
   return /^[0-9]/.test(p) ? `_${p}` : p;
 }
+
+/** 英数字を含まない文字列（空文字・記号・空白）の識別子 */
+function symbolIdentifier(s: string): string {
+  if (s.length === 0) return "Empty";
+  return [...s]
+    .map((ch) => SYMBOL_NAMES[ch] ?? `U${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`)
+    .join("");
+}
+
+// ASCII の記号・空白の名前（enum の値が記号だけのとき、`Public Const` の名前に使う）
+const SYMBOL_NAMES: Readonly<Record<string, string>> = {
+  " ": "Space",
+  "!": "Exclamation",
+  '"': "Quote",
+  "#": "Hash",
+  $: "Dollar",
+  "%": "Percent",
+  "&": "Ampersand",
+  "'": "Apostrophe",
+  "(": "LeftParen",
+  ")": "RightParen",
+  "*": "Asterisk",
+  "+": "Plus",
+  ",": "Comma",
+  "-": "Hyphen",
+  ".": "Dot",
+  "/": "Slash",
+  ":": "Colon",
+  ";": "Semicolon",
+  "<": "LessThan",
+  "=": "Equal",
+  ">": "GreaterThan",
+  "?": "Question",
+  "@": "At",
+  "[": "LeftBracket",
+  "\\": "Backslash",
+  "]": "RightBracket",
+  "^": "Caret",
+  _: "Underscore",
+  "`": "Backtick",
+  "{": "LeftBrace",
+  "|": "Pipe",
+  "}": "RightBrace",
+  "~": "Tilde",
+};
 
 // VB.NET の予約語（大文字小文字を区別しない）。プロパティ名等にぶつかったら [] で囲む
 const VB_KEYWORDS = new Set(
@@ -38,6 +90,17 @@ Variant Wend When While Widening With WithEvents WriteOnly Xor`
 
 export function vbEscape(identifier: string): string {
   return VB_KEYWORDS.has(identifier.toLowerCase()) ? `[${identifier}]` : identifier;
+}
+
+// System.Object のメンバー名（大文字小文字を区別しない）。生成する DTO・実装クラス・BridgeEvents は Object を継承するので、
+// メソッド名・プロパティ名・イベント名がこれと同じだと基底のメンバーとぶつかる。予約語と違って [] では避けられない
+const OBJECT_MEMBERS = new Set(
+  ["Equals", "Finalize", "GetHashCode", "GetType", "MemberwiseClone", "ReferenceEquals", "ToString"].map((m) => m.toLowerCase()),
+);
+
+/** System.Object のメンバー名と同じか（契約側で名前を変えてもらうための検出） */
+export function isObjectMember(identifier: string): boolean {
+  return OBJECT_MEMBERS.has(identifier.toLowerCase());
 }
 
 const TS_RESERVED = new Set(

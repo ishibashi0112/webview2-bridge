@@ -55,7 +55,7 @@ dotnet run --project dotnet/MyApp.Host
 ```
 
 PowerShell は `$env:WEBVIEW2_BRIDGE_DEV_URL="http://localhost:5173"`。バッジが `transport: webview2` になり、
-`customers.list` で VB 側 `CustomersApi` の結果と progress が表示されれば OK。F12 で DevTools。
+`customers.list` で VB 側 `CustomersApi` の結果と progress が表示されれば OK。F12 で DevTools（Debug ビルドは常に開発モード）。
 
 配布形態（環境変数なし）:
 
@@ -66,6 +66,8 @@ dotnet build dotnet/MyApp.sln -c Release         # dist を bin/Release/net48/ww
 
 `bin/Release/net48/MyApp.exe` を起動すると `https://app.local/index.html` から wwwroot が読まれる。
 配布するのは `bin/Release/net48/` 一式（wwwroot を含む）。
+Release では F12（開発者ツール）と F5 / Ctrl+R（再読込。編集中の内容が確認なしに消える）などブラウザのショートカットが効かない。
+本番の exe で調べたいときは環境変数 `WEBVIEW2_BRIDGE_DEV=1` を付けて起動すると開発モードになる（`MainForm.DevMode`）。
 
 ## 自動テスト(動作確認をコードで置き換える)
 

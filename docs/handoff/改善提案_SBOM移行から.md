@@ -15,26 +15,28 @@
 - 1 項目 = 1 コミットを目安に、下の優先度の順に進める。P1 は小さく効果が大きいので、まとめて 0.5.2 にしてよい
 - 判断が要る箇所は「決めること」に書いた。迷ったら推奨案で進めて §10 に記録する
 
-| 優先 | ID | 内容 | 種類 | 規模 |
-|---|---|---|---|---|
-| P1 | A-1 | enum に空文字があると、コンパイルできない VB を生成する | gen の不具合 | 小 |
-| P1 | B-1 | 雛形の Release ビルドで F12(開発者ツール)・F5(再読込)が効く | 雛形の不具合 | 小 |
-| P1 | A-2 | Object のメンバー名(Finalize 等)とぶつかる名前を検出しない | gen | 小 |
-| P2 | A-3 | 実装の登録漏れに起動時に気づけない | gen / ランタイム | 小 |
-| P2 | B-2 | 画面ファイルのキャッシュで、入れ替え後に古い画面が出る | 雛形 | 小 |
-| P2 | B-3 | 業務エラー(入力欄つき)の決まりが無く、アプリごとに作る | ランタイム / client | 中 |
-| P2 | B-4 | 配布の形: exe の隣に DLL などを並べずフォルダにまとめる(opt-in) | 雛形 | 中 |
-| P3 | A-4 | 小数が Double にしかならない(お金・工数は Decimal にしたい) | gen | 中 |
-| P3 | C-1 | 画面テストで、モックの応答をテストごとに差し替えられない | client / test | 中 |
-| P3 | C-2 | host 層のテストが 1 ウィンドウ前提 | test | 中 |
-| P3 | B-5 | 共有フォルダへの配布スクリプト(使用中の検出・控え・記録) | 雛形 | 中 |
-| P3 | D-1 | 文書: 公開直後の版を入れるときの pnpm の minimumReleaseAge | 文書 | 小 |
+| 優先 | ID | 内容 | 種類 | 規模 | 状態 |
+|---|---|---|---|---|---|
+| P1 | A-1 | enum に空文字があると、コンパイルできない VB を生成する | gen の不具合 | 小 | **対応済み 0.5.2**(2026-10-08) |
+| P1 | B-1 | 雛形の Release ビルドで F12(開発者ツール)・F5(再読込)が効く | 雛形の不具合 | 小 | **対応済み 0.5.2**(Windows 実機の確認は未実施) |
+| P1 | A-2 | Object のメンバー名(Finalize 等)とぶつかる名前を検出しない | gen | 小 | **対応済み 0.5.2** |
+| P2 | A-3 | 実装の登録漏れに起動時に気づけない | gen / ランタイム | 小 | |
+| P2 | B-2 | 画面ファイルのキャッシュで、入れ替え後に古い画面が出る | 雛形 | 小 | |
+| P2 | B-3 | 業務エラー(入力欄つき)の決まりが無く、アプリごとに作る | ランタイム / client | 中 | |
+| P2 | B-4 | 配布の形: exe の隣に DLL などを並べずフォルダにまとめる(opt-in) | 雛形 | 中 | |
+| P3 | A-4 | 小数が Double にしかならない(お金・工数は Decimal にしたい) | gen | 中 | |
+| P3 | C-1 | 画面テストで、モックの応答をテストごとに差し替えられない | client / test | 中 | |
+| P3 | C-2 | host 層のテストが 1 ウィンドウ前提 | test | 中 | |
+| P3 | B-5 | 共有フォルダへの配布スクリプト(使用中の検出・控え・記録) | 雛形 | 中 | |
+| P3 | D-1 | 文書: 公開直後の版を入れるときの pnpm の minimumReleaseAge | 文書 | 小 | |
+
+P1 の 3 件で決めたこと(空文字・記号の名前の規則、`WEBVIEW2_BRIDGE_DEV`、`NewWindowRequested` は既定のブラウザへ)は HANDOFF.md §10「SBOM 移行の改善提案 P1 の 3 件(2026-10-08、0.5.2)」にある。
 
 ---
 
 ## A. 生成器(packages/gen)
 
-### A-1. enum に空文字があると、コンパイルできない VB を生成する(P1)
+### A-1. enum に空文字があると、コンパイルできない VB を生成する(P1・対応済み 0.5.2)
 
 **現状**: `packages/gen/src/emit-vb.ts` の `renderEnum` は、値ごとに `toIdentifier(v)`(`naming.ts`)で定数名を作る。`toIdentifier("")` は `pascalCase("")` が空なので `"_"` を返し、次の行ができる。
 
@@ -53,7 +55,7 @@ Public Const _ As String = ""   ' VB では "_" 単独は識別子にならな�
 
 **完了条件**: `packages/gen/test/emit-vb.test.ts` に `z.enum(["", "A", "-"])` のケースを足し、生成物に `Public Const Empty As String = ""` が出ること。スナップショットを更新。
 
-### A-2. Object のメンバー名とぶつかる名前を検出しない(P1)
+### A-2. Object のメンバー名とぶつかる名前を検出しない(P1・対応済み 0.5.2)
 
 **現状**: `naming.ts` の `VB_KEYWORDS` は VB の予約語で、ぶつかったら `[Name]` と角かっこで囲む。`Finalize` / `ToString` / `Equals` / `GetHashCode` / `MemberwiseClone` / `ReferenceEquals` は予約語ではないので素通しになる(`GetType` だけは一覧にある)。
 
@@ -96,7 +98,7 @@ Public Const _ As String = ""   ' VB では "_" 単独は識別子にならな�
 
 ## B. 雛形(templates/myapp)とランタイム
 
-### B-1. Release ビルドでも F12・F5 が効く(P1)
+### B-1. Release ビルドでも F12・F5 が効く(P1・対応済み 0.5.2。Windows 実機の確認は未実施)
 
 **現状**: `templates/myapp/dotnet/MyApp.Host/MainForm.vb` は `core.Settings.AreDevToolsEnabled = True` を常に設定している。`AreBrowserAcceleratorKeysEnabled` は既定(True)のまま。
 

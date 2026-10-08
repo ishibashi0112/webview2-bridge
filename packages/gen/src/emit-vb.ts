@@ -1,4 +1,4 @@
-import { pascalCase, toIdentifier, vbEscape } from "./naming.js";
+import { isObjectMember, pascalCase, toIdentifier, vbEscape } from "./naming.js";
 import { GenerateError, refName, type ContractSchema, type JsonSchema } from "./schema.js";
 import type { EmittedFile } from "./emitted.js";
 
@@ -117,13 +117,15 @@ class VbContext {
       for (const [name, m] of Object.entries(methods)) {
         const base = `${pascalCase(ns)}${pascalCase(name)}`;
         const path = `methods.${ns}.${name}`;
+        const vbName = pascalCase(name);
+        rejectObjectMember("Method", name, vbName, path);
         const request = this.resolveNamed(m.input, `${base}Request`, `${path}.input`);
         const response = this.resolveNamed(m.output, `${base}Response`, `${path}.output`);
         this.methods.push({
           ns,
           name,
           rpcName: `${ns}.${name}`,
-          vbName: pascalCase(name),
+          vbName,
           request,
           response,
           ...(m.input.description !== undefined && { description: m.input.description }),
@@ -131,11 +133,13 @@ class VbContext {
       }
     }
     for (const [name, e] of Object.entries(this.schema.events)) {
+      const vbName = pascalCase(name);
+      rejectObjectMember("Event", name, vbName, `events.${name}`);
       const payload = this.resolveNamed(e, `${pascalCase(name)}Event`, `events.${name}`);
       this.events.push({
         name,
         rpcName: `event.${name}`,
-        vbName: pascalCase(name),
+        vbName,
         payload,
         ...(e.description !== undefined && { description: e.description }),
       });
@@ -208,6 +212,7 @@ class VbContext {
       if (vbName === name) {
         throw new GenerateError(`Property "${jsonName}" would have the same name as its class "${name}"`, propPath);
       }
+      rejectObjectMember("Property", jsonName, vbName, propPath);
       const type = this.resolveType(ps, name, jsonName, propPath);
       cls.props.push({
         jsonName,
@@ -384,7 +389,8 @@ class VbContext {
     lines.push(`        Private Sub New()`);
     lines.push(`        End Sub`);
     lines.push("");
-    const used = new Set<string>();
+    // 同じクラスの `Values` 配列と、大文字小文字だけ違う値（VB は区別しない）には `_` を足して避ける
+    const used = new Set<string>(["values"]);
     for (const v of e.values) {
       let id = toIdentifier(v);
       while (used.has(id.toLowerCase())) id = `${id}_`;
@@ -496,6 +502,19 @@ class VbContext {
 
 function interfaceName(ns: string): string {
   return `I${pascalCase(ns)}Api`;
+}
+
+/**
+ * メソッド名・プロパティ名・イベント名が System.Object のメンバー（Finalize / ToString / Equals 等）になるなら止める。
+ * 生成コードを Implements する実装クラスや DTO は Object を継承するので、同じ名前のメンバーは基底とぶつかる
+ * （予約語の `[]` では避けられない）。自動で改名すると VB の実装者が契約の名前と突き合わせられなくなるので、契約側で変えてもらう
+ */
+function rejectObjectMember(kind: "Method" | "Property" | "Event", original: string, vbName: string, path: string): void {
+  if (!isObjectMember(vbName)) return;
+  throw new GenerateError(
+    `${kind} "${original}" would be generated as "${vbName}", which is a member of System.Object and collides with it in VB. Rename it in the contract (Equals / Finalize / GetHashCode / GetType / MemberwiseClone / ReferenceEquals / ToString cannot be used)`,
+    path,
+  );
 }
 
 function isObjectSchema(s: JsonSchema): boolean {

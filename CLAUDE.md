@@ -23,7 +23,7 @@
 - 契約: `@webview2-bridge/contract`（contract/、private・非公開）
 - NuGet: `WebView2Bridge.Runtime`（dotnet/WebView2Bridge.Runtime、名前空間 `WebView2Bridge.Runtime`）、`WebView2Bridge.WinForms`（dotnet/WebView2Bridge.WinForms）
 - .NET（アプリ固有）: `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`
-- 環境変数: `WEBVIEW2_BRIDGE_DEV_URL`（Debug 時に Vite dev server へ接続）
+- 環境変数: `WEBVIEW2_BRIDGE_DEV_URL`（Debug 時に Vite dev server へ接続）、`WEBVIEW2_BRIDGE_DEV`（`1` で Release でも開発モード = F12 / F5 等が効く。Debug は常に開発モード）
 
 ## コマンド
 - `pnpm install` / `pnpm gen` / `pnpm gen:check` / `pnpm -r test` / `pnpm -r typecheck`
