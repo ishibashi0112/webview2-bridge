@@ -28,6 +28,14 @@ test("該当が無いときは一覧が空になる", async ({ page }) => {
   await expect(page.getByTestId("customers-item")).toHaveCount(0);
 });
 
+test("keyword に % を含むと業務エラーが入力欄の横に出る(VB の JsonRpcException.Business と同じ形)", async ({ page }) => {
+  await page.getByTestId("customers-keyword").fill("山%");
+  await page.getByTestId("customers-search").click();
+  await expect(page.getByTestId("customers-keyword-error")).toHaveText("キーワードに % は使えません");
+  await expect(page.getByTestId("customers-error")).toHaveCount(0);
+  await expect(page.getByTestId("customers-item")).toHaveCount(0);
+});
+
 test("検索中の progress イベントが 100% まで届く", async ({ page }) => {
   await page.getByTestId("customers-search").click();
   await expect(page.getByTestId("customers-progress")).toHaveText("100%");

@@ -1,4 +1,4 @@
-import { HttpTransport, MemoryTransport, createClient, selectTransport, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
+import { HttpTransport, MemoryTransport, businessError, createClient, selectTransport, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
 import { contract, type Contract } from "../../contract/contract";
 
 // ブラウザ単体（pnpm dev）で動かすためのモック。VB 側 CustomersApi と振る舞いを揃える
@@ -10,9 +10,11 @@ const customers = [
 const handlers: MemoryHandlers<Contract> = {
   customers: {
     list: async (input, { emit }) => {
+      const kw = input.keyword ?? "";
+      // 業務エラーの見本: VB 側 CustomersApi の JsonRpcException.Business と同じ形（-32010、message をそのまま見せる、field で入力欄に結び付く）
+      if (kw.includes("%")) throw businessError("キーワードに % は使えません", { field: "keyword" });
       emit("progress", { percent: 0 });
       await new Promise((r) => setTimeout(r, 100));
-      const kw = input.keyword ?? "";
       emit("progress", { percent: 100 });
       return { items: customers.filter((c) => c.name.includes(kw)) };
     },

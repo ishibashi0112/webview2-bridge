@@ -70,6 +70,15 @@ describe("emitVb", () => {
     expect(d).not.toContain("Partial Public Class");
   });
 
+  it("emits MissingMethods so the host can detect unregistered implementations at startup (A-3)", () => {
+    const d = emitAll(kitchenSinkContract)["Dispatcher.Generated.vb"]!;
+    expect(d).toContain("Imports System.Collections.Generic");
+    expect(d).toContain("Imports System.Linq");
+    expect(d).toContain("<Extension>\n        Public Function MissingMethods(dispatcher As Dispatcher) As String()");
+    expect(d).toContain("Dim registered As New HashSet(Of String)(dispatcher.RegisteredMethods, StringComparer.Ordinal)");
+    expect(d).toContain("Return MethodNames.Where(Function(m) Not registered.Contains(m)).ToArray()");
+  });
+
   it("lets the runtime namespace be overridden", () => {
     const files = emitVb(toSchema(sampleContract), { ...opts, runtimeNamespace: "My.Runtime" });
     const byPath = Object.fromEntries(files.map((f) => [f.path, f.content]));

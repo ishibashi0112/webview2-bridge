@@ -4,6 +4,8 @@
     <OptionExplicit>On</OptionExplicit>
     <OptionInfer>On</OptionInfer>
     <LangVersion>16.9</LangVersion>
+    <!-- pdb を DLL / exe に埋め込む（配布するファイルを減らす。例外のスタックトレースに行番号は出る） -->
+    <DebugType>embedded</DebugType>
     <MyType Condition="'$(OutputType)' != 'WinExe'">Empty</MyType>
     <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
   </PropertyGroup>

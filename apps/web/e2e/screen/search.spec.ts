@@ -36,6 +36,15 @@ test('keyword が "error" だとホスト例外(-32000)が表示される', asyn
   await expect(page.getByTestId("search-error")).toContainText("Simulated failure");
 });
 
+test('keyword に "%" を含むと業務エラー(-32010)が message と field 付きで表示される', async ({ page }) => {
+  await page.getByTestId("search-keyword").fill("m6%");
+  await page.getByTestId("search-submit").click();
+  await expect(page.getByTestId("search-error-kind")).toHaveText("business -32010");
+  await expect(page.getByTestId("search-error")).toContainText("キーワードに % は使えません");
+  await expect(page.getByTestId("search-error")).toContainText("field: keyword");
+  await expect(page.getByTestId("search-results")).toHaveCount(0);
+});
+
 test("該当が無いときは「該当なし」の行が出る", async ({ page }) => {
   await page.getByTestId("search-keyword").fill("zzz");
   await page.getByTestId("search-submit").click();

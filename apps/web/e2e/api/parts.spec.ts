@@ -19,6 +19,13 @@ test('parts.search は keyword が "error" のときホスト例外 -32000 を�
   expect(err.data).toBe("System.InvalidOperationException");
 });
 
+test('parts.search は keyword に "%" があると業務エラー -32010 を field 付きで返す', async ({ bridge }) => {
+  const err = await bridge.expectError("parts.search", { keyword: "m6%" });
+  expect(err.code).toBe(-32010);
+  expect(err.message).toContain("キーワードに % は使えません"); // BridgeCallError.message は "method: name code: message" の形
+  expect(err.data).toEqual({ field: "keyword" });
+});
+
 test("parts.search は空の keyword を送信前の入力検証で拒否する", async ({ bridge }) => {
   const err = await bridge.expectError("parts.search", { keyword: "" });
   expect(err.remoteName).toBe("BridgeValidationError");

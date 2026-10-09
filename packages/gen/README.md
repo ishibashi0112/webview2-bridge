@@ -94,7 +94,7 @@ Commit the generated files.
 |---|---|
 | `Dto.vb` | one `Public Class` per object with `<JsonProperty("camelCase")>`; string enums as `NotInheritable Class` with `Public Const` |
 | `Interfaces.vb` | `Public Interface IPartsApi` with `Function Search(req As PartsSearchRequest) As Task(Of PartsSearchResponse)` |
-| `Dispatcher.Generated.vb` | `DispatcherExtensions.Register(dispatcher, api)` extension methods wiring `"parts.search"` to `IPartsApi.Search` |
+| `Dispatcher.Generated.vb` | `DispatcherExtensions.Register(dispatcher, api)` extension methods wiring `"parts.search"` to `IPartsApi.Search`; `MethodNames` and `MissingMethods(dispatcher)` (contract methods not registered yet, for a startup check) |
 | `Events.vb` | `BridgeEvents` with `Sub Progress(payload As ProgressEvent)` emitting `"event.progress"` |
 
 **OpenAPI 3.1** (`openapi.json`, when `openapi.out` is set): the same contract as an HTTP API, so the VB host can later be

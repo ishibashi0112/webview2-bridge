@@ -430,7 +430,7 @@ class VbContext {
     const out: string[] = [];
     // Dispatcher は WebView2Bridge.Runtime（別アセンブリ）にあるので Partial Class では拡張できない。
     // 拡張メソッド `dispatcher.Register(api)` として生成する
-    out.push(this.header("System.Runtime.CompilerServices", this.runtimeNamespace));
+    out.push(this.header("System.Collections.Generic", "System.Linq", "System.Runtime.CompilerServices", this.runtimeNamespace));
     out.push("");
     out.push(`Namespace Global.${this.options.namespace}`);
     out.push("");
@@ -441,6 +441,14 @@ class VbContext {
     out.push(
       `        Public ReadOnly MethodNames As String() = {${this.methods.map((m) => vbString(m.rpcName)).join(", ")}}`,
     );
+    out.push("");
+    out.push(`        ''' <summary>契約にあるのに登録されていないメソッド名（起動時の登録漏れの確認用。空なら全て登録済み）</summary>`);
+    out.push(`        <Extension>`);
+    out.push(`        Public Function MissingMethods(dispatcher As ${this.dispatcherClass}) As String()`);
+    out.push(`            If dispatcher Is Nothing Then Throw New ArgumentNullException(NameOf(dispatcher))`);
+    out.push(`            Dim registered As New HashSet(Of String)(dispatcher.RegisteredMethods, StringComparer.Ordinal)`);
+    out.push(`            Return MethodNames.Where(Function(m) Not registered.Contains(m)).ToArray()`);
+    out.push(`        End Function`);
     for (const ns of this.namespaces()) {
       out.push("");
       out.push(`        ''' <summary>"${ns}.*" の実装を登録する</summary>`);

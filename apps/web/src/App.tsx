@@ -1,4 +1,4 @@
-import { BridgeError, BridgeValidationError } from "@ishibashi0112/webview2-bridge-client";
+import { BridgeError, BridgeValidationError, errorField, isUserFacingError } from "@ishibashi0112/webview2-bridge-client";
 import { useEffect, useState, type FormEvent } from "react";
 import { client, transportMode } from "./bridge";
 import type { Part, ProgressEvent } from "./generated/contract-types";
@@ -12,6 +12,11 @@ interface ErrorInfo {
 function describeError(e: unknown): ErrorInfo {
   if (e instanceof BridgeValidationError) {
     return { kind: `validation (${e.direction})`, message: e.message, detail: JSON.stringify(e.issues, null, 2) };
+  }
+  if (isUserFacingError(e)) {
+    // 業務エラー（VB の JsonRpcException.Business）: message をそのまま利用者に見せる。field は結び付く入力項目（要求の JSON 名）
+    const field = errorField(e);
+    return { kind: `business ${e.code}`, message: e.message, detail: field === undefined ? undefined : `field: ${field}` };
   }
   if (e instanceof BridgeError) {
     return { kind: `${e.name} ${e.code}`, message: e.message, detail: e.data === undefined ? undefined : JSON.stringify(e.data) };
@@ -65,7 +70,7 @@ export function App() {
       <form onSubmit={(e) => void onSubmit(e)} className="search">
         <label>
           keyword
-          <input data-testid="search-keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder='空にすると入力検証エラー、"error" でホスト例外' />
+          <input data-testid="search-keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder='空にすると入力検証エラー、"error" でホスト例外、"%" で業務エラー' />
         </label>
         <label>
           limit

@@ -56,7 +56,10 @@ export class MemoryTransport<C extends ContractShape> implements Transport {
       const result = await handler(roundTrip(params), this.context);
       return roundTrip(result);
     } catch (e) {
-      if (e instanceof BridgeError) throw e;
+      if (e instanceof BridgeError) {
+        // 実 transport と同じく、どのメソッドの失敗かを付ける（モックは method を知らずに businessError() を投げてよい）
+        throw e.method === undefined ? new BridgeError({ code: e.code, message: e.message, data: e.data }, method) : e;
+      }
       // VB 側の未処理例外と同じ形（-32000, message, data = 例外型名）に揃える
       const err = e instanceof Error ? e : new Error(String(e));
       throw new BridgeError({ code: JsonRpcErrorCodes.ServerError, message: err.message, data: err.name }, method);

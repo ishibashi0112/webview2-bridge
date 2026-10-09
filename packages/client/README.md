@@ -32,6 +32,10 @@ const off = client.events.on("progress", (p) => console.log(p.percent)); // host
 - Host errors arrive as `BridgeError` with the JSON-RPC `code` / `message` / `data`
   (`-32000` + exception type name for unhandled VB exceptions, or the code of a `JsonRpcException`).
 - `BridgeTimeoutError` after `timeoutMs` (default 30 s); `BridgeDisposedError` when the transport was disposed.
+- **Business errors** (code `-32010`, thrown on the VB side with `JsonRpcException.Business(message, field)`): the `message` is meant for
+  the user as is, and `data.field` (optional) names the request property the error belongs to. `isBusinessError(e)`, `isUserFacingError(e)`
+  (codes `-32010`‥`-32019`, so apps can add their own user-facing codes from `-32011`), `errorField(e)`, and `businessError(message, { field })`
+  for mocks.
 
 ## Transports
 

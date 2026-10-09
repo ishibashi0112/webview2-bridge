@@ -20,6 +20,7 @@ export {
   type Transport,
   type ValidationDirection,
 } from "./transport.js";
+export { businessError, errorField, isBusinessError, isUserFacingError, type BusinessErrorData } from "./errors.js";
 export { WebView2Transport, getWebView2, type WebView2Like, type WebView2TransportOptions } from "./webview2.js";
 export { HttpTransport, type HttpTransportEventsOptions, type HttpTransportOptions } from "./http.js";
 export { MemoryTransport, type MemoryContext, type MemoryHandlers, type MemoryTransportOptions } from "./memory.js";

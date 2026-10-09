@@ -2,6 +2,7 @@ Option Strict On
 
 Imports System
 Imports System.Diagnostics
+Imports System.Globalization
 Imports System.IO
 Imports System.Windows.Forms
 Imports Microsoft.Web.WebView2.Core
@@ -63,6 +64,16 @@ Public Class MainForm
             _bridge = New WebViewBridge(WebView, dispatcher)
             Dim events As New BridgeEvents(_bridge)
             dispatcher.Register(New PartsApi(events))
+            If DevMode Then
+                ' 登録漏れ（契約にあるのに Register していないメソッド）を起動時に知らせる。本番では確かめない
+                Dim missing = dispatcher.MissingMethods()
+                If missing.Length > 0 Then
+                    MessageBox.Show(
+                        "Dispatcher に登録されていないメソッドがあります。MainForm.vb の dispatcher.Register(...) を確認してください:" & Environment.NewLine &
+                        String.Join(Environment.NewLine, missing),
+                        Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End If
+            End If
             _bridge.Attach()
 
             Dim devUrl = DevServerUrl()
@@ -81,7 +92,7 @@ Public Class MainForm
                     Return
                 End If
                 core.SetVirtualHostNameToFolderMapping(VirtualHost, wwwroot, CoreWebView2HostResourceAccessKind.Allow)
-                core.Navigate($"https://{VirtualHost}/index.html")
+                core.Navigate(StartUrl(wwwroot))
             End If
         Catch ex As Exception
             MessageBox.Show(ex.ToString(), "WebView2 の初期化に失敗しました", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -95,6 +106,16 @@ Public Class MainForm
         If Not String.IsNullOrWhiteSpace(url) Then Return url.Trim()
 #End If
         Return Nothing
+    End Function
+
+    ''' <summary>
+    ''' 配布物を入れ替えた後に WebView2 のキャッシュから古い index.html が出ないよう、index.html の更新日時をクエリに付ける
+    ''' （js / css は Vite がファイル名に内容のハッシュを付けるので、index.html さえ新しければ全部新しくなる）
+    ''' </summary>
+    Private Shared Function StartUrl(wwwroot As String) As String
+        Dim index = Path.Combine(wwwroot, "index.html")
+        Dim stamp = If(File.Exists(index), File.GetLastWriteTimeUtc(index).Ticks.ToString(CultureInfo.InvariantCulture), "0")
+        Return $"https://{VirtualHost}/index.html?v={stamp}"
     End Function
 
     Private Shared Sub Core_NewWindowRequested(sender As Object, e As CoreWebView2NewWindowRequestedEventArgs)

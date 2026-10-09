@@ -11,7 +11,8 @@ This package contains the parts that do not depend on the contract or on WebView
 - `JsonRpc` — envelope helpers (`BuildResult`, `BuildError`, `BuildNotification`, `ParseToken`).
   Dates are kept as ISO 8601 strings (`DateParseHandling.None`).
 - `IBridgeEmitter` — the host → web notification sink implemented by the host (see `WebView2Bridge.WinForms`).
-- `JsonRpcException` / `JsonRpcErrorCodes`.
+- `JsonRpcException` / `JsonRpcErrorCodes`. `JsonRpcException.Business(message, field)` raises a business error (`-32010`): the message is
+  shown to the user as is, `data.field` (optional) names the request property it belongs to; `-32010`‥`-32019` are user-facing codes.
 
 The generated code (`pnpm gen` from `@ishibashi0112/webview2-bridge-gen`) targets this package:
 it emits DTO classes, `IXxxApi` interfaces, a `DispatcherExtensions.Register(dispatcher, api)` extension method
@@ -20,6 +21,7 @@ and a `BridgeEvents` helper into your own Contract project, which references `We
 ```vb
 Dim dispatcher As New Dispatcher()
 dispatcher.Register(New PartsApi(events))          ' generated extension method
+Dim missing = dispatcher.MissingMethods()          ' generated: contract methods nobody registered (check at startup in dev)
 Dim responseJson = Await dispatcher.HandleAsync(requestJson)
 ```
 

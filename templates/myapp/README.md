@@ -20,7 +20,7 @@ myapp/
     MyApp.sln
     MyApp.Contract/            # netstandard2.0。Generated/ と Runtime/ は生成。手で書くものは無い
     MyApp.Impl/                # net48。IXxxApi の実装を手で書く（DB / サーバーアクセスはここ）
-    MyApp.Host/                # net48 WinForms exe。MainForm.vb / Program.vb を手で書く。Bridge/ は生成
+    MyApp.Host/                # net48 WinForms exe。MainForm.vb / Program.vb を手で書く。Bridge/ は生成。App.config は配布の形（後述）用
 ```
 
 手で書くファイルは 5 つ: `contract.ts`、`bridge.ts`、`main.tsx`、`CustomersApi.vb`、`MainForm.vb`。
@@ -64,8 +64,12 @@ pnpm build:web                                   # → web/dist
 dotnet build dotnet/MyApp.sln -c Release         # dist を bin/Release/net48/wwwroot にコピーする
 ```
 
-`bin/Release/net48/MyApp.exe` を起動すると `https://app.local/index.html` から wwwroot が読まれる。
+`bin/Release/net48/MyApp.Host.exe` を起動すると `https://app.local/index.html` から wwwroot が読まれる
+（index.html の更新日時を `?v=` に付けて開くので、入れ替え後に WebView2 のキャッシュから古い画面が出ることはない）。
 配布するのは `bin/Release/net48/` 一式（wwwroot を含む）。
+exe の隣に DLL や wwwroot を並べたくない（共有フォルダで母艦と同じ階層に置く等）ときは、`MyApp.Host.vbproj` の `<AppFilesDir>` を `MyApp\` にする。
+直下は `MyApp.Host.exe` と `MyApp.Host.exe.config` だけになり、残り（DLL、`WebView2Loader.dll`、wwwroot）は `MyApp\` に入る
+（`App.config` の `probing privatePath` と `MainForm.FilesDirName` がこのフォルダ名を前提にしているので、名前は変えない。exe はどちらの形でも動く）。
 Release では F12（開発者ツール）と F5 / Ctrl+R（再読込。編集中の内容が確認なしに消える）などブラウザのショートカットが効かない。
 本番の exe で調べたいときは環境変数 `WEBVIEW2_BRIDGE_DEV=1` を付けて起動すると開発モードになる（`MainForm.DevMode`）。
 
@@ -87,6 +91,9 @@ pnpm test:all      # 会社 PC で打つ 1 コマンド
 2. `pnpm gen`（CI では `pnpm gen:check`）
 3. `web/src/bridge.ts` のモックに同じメソッドを足し、画面を作る（ブラウザだけで進む）
 4. `dotnet/MyApp.Impl/` に実装を書く。新しい namespace を足したら `MainForm.vb` の `dispatcher.Register(...)` も 1 行足す
+   （忘れると開発モードの起動時に「登録されていないメソッド」の MessageBox が出る。`dispatcher.MissingMethods()`）
+   利用者に見せるエラーは `Throw JsonRpcException.Business("メッセージ", "入力項目の JSON 名")`（-32010）。
+   モックは `throw businessError("メッセージ", { field: "..." })`、画面は `isUserFacingError(e)` / `errorField(e)` で受ける（見本: keyword に `%`）
 5. `e2e/screen/` に画面のテスト、`e2e/api/` に契約メソッドのテストを足す(`pnpm test` はどこでも走る)
 6. Windows で `pnpm test:all`(実機の api / host まで自動で確認)
 
