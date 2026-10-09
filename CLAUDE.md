@@ -17,13 +17,15 @@
 - 契約は HTTP にも写せる形を保つ（HANDOFF.md §10「HTTP / OpenAPI」）: `pnpm gen` が `contract/openapi.json` を生成し、client の `HttpTransport` がその形で話す。画面のコードに fetch を直接書かない。イベントは補助通知に留め、業務の正しさをイベントに依存させない
 - 自動テストは TypeScript だけ（VB にテストは書かない）。3 層 = `e2e/screen`（ブラウザ + MemoryTransport）/ `e2e/api`（実 exe の VB を `bridge.call` で直接）/ `e2e/host`（実 exe を画面操作）。部品は `packages/test`、設計は slnmix の `docs/HANDOFF-testing-2026-09.md`。React の操作・確認する要素には `data-testid="<画面>-<役割>"` を付ける。`bridge.ts` は開発ビルドでクライアントを `window.__webview2Bridge` に公開する（api 層が使う）。apps/web を変えたら `e2e/screen` のテストも直し、`pnpm --filter web test` を通す（Claude Code の完了条件）。api / host は Windows 実機のみ
 - 日付は ISO 8601 文字列で往復する。VB 側で JSON を読むときは `JObject.Parse` ではなく `JsonRpc.ParseToken` を使う（Date 自動変換を防ぐ）
+- 利用者に見せるエラーは業務エラー -32010（`JsonRpcException.Business(message, field)` / client の `isUserFacingError` / `errorField`。HANDOFF.md §5）。-32010〜-32019 が利用者向けの範囲
+- 版上げのとき `pnpm gen:template` は `pnpm --filter @ishibashi0112/webview2-bridge-gen sync:vb-runtime` の後に走らせる（`pnpm build` は順序込みで面倒を見る）
 
 ## 名前
 - npm: `@ishibashi0112/webview2-bridge-gen`（packages/gen）、`@ishibashi0112/webview2-bridge-client`（packages/client）、`create-webview2-bridge`（packages/create。スコープ無し）、`@ishibashi0112/webview2-bridge-test`（packages/test）
 - 契約: `@webview2-bridge/contract`（contract/、private・非公開）
 - NuGet: `WebView2Bridge.Runtime`（dotnet/WebView2Bridge.Runtime、名前空間 `WebView2Bridge.Runtime`）、`WebView2Bridge.WinForms`（dotnet/WebView2Bridge.WinForms）
 - .NET（アプリ固有）: `WebView2Bridge.Contract` / `WebView2Bridge.Impl` / `WebView2Bridge.Host`
-- 環境変数: `WEBVIEW2_BRIDGE_DEV_URL`（Debug 時に Vite dev server へ接続）
+- 環境変数: `WEBVIEW2_BRIDGE_DEV_URL`（Debug 時に Vite dev server へ接続）、`WEBVIEW2_BRIDGE_DEV`（`1` で Release でも開発モード = F12 / F5 等が効く。Debug は常に開発モード）
 
 ## コマンド
 - `pnpm install` / `pnpm gen` / `pnpm gen:check` / `pnpm -r test` / `pnpm -r typecheck`

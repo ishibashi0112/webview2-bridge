@@ -66,6 +66,23 @@ test("orders.register は Orders に 1 行入れ、採番した OrderNo を返�
 | `bridge` | api / host | `bridge.call("ns.method", input)` / `bridge.expectError(...)`。ページ内の `window.__webview2Bridge`(開発ビルドで `web/src/bridge.ts` が公開)を呼ぶ |
 | `db` | api / host | `query` / `insert` / `rows` / `snapshot` / `diff` / `expectRow`。`insert` した行と `diff` で増えた行はテスト終了時に自動で削除 |
 | `testId` | 全部 | `E2E-20260922-1432-a7z9` の形。テストが作るデータのキー・名称の接頭辞にする |
+| `hostWindows` / `waitForWindow` | 全部 | 画面ごとに別ウィンドウを開くアプリ用。`hostWindows()` は今のウィンドウ全部、`await waitForWindow((p) => p.url().includes("#/screens/x"))` で新しいウィンドウの `Page` を待つ。1 ウィンドウのアプリでは不要 |
+
+### モックの応答を差し替える(screen)
+
+`web/src/bridge.ts` のモックはそのままに、テストの中で 1 メソッドの応答だけ差し替えられる(「取得に失敗したとき」「権限が無いとき」をモックのデータに仕込まずに再現する)。
+差し替えは今のページに即時に効き、そのテストの間だけ残る(テストごとに新しいページになる)。
+
+```ts
+import { expect, mockBusinessError, mockReturn, mockThrow, test } from "@ishibashi0112/webview2-bridge-test";
+
+test("取得に失敗したときはエラー欄に出る", async ({ page }) => {
+  await mockThrow(page, "customers.list", { code: -32000, message: "DB に接続できません", data: "System.Data.SqlClient.SqlException" });
+  await page.getByTestId("customers-search").click();
+  await expect(page.getByTestId("customers-error")).toContainText("DB に接続できません");
+});
+// mockReturn(page, "app.getContext", { devMode: false }) で応答を固定、mockBusinessError(page, "orders.register", "在庫が足りません", "qty") で業務エラー
+```
 
 ### 約束
 

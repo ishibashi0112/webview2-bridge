@@ -12,3 +12,10 @@ test("customers.list は keyword で名前を部分一致で絞り込む", async
   const res = await bridge.call<{ items: { id: string }[] }>("customers.list", { keyword: "鈴木" });
   expect(res.items.map((c) => c.id)).toEqual(["3"]);
 });
+
+test("customers.list は keyword に % があると業務エラー(-32010、field = keyword)を返す", async ({ bridge }) => {
+  const err = await bridge.expectError("customers.list", { keyword: "%" });
+  expect(err.code).toBe(-32010);
+  expect(err.message).toContain("キーワードに % は使えません"); // BridgeCallError.message は "method: name code: message" の形
+  expect(err.data).toEqual({ field: "keyword" });
+});

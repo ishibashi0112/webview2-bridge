@@ -94,7 +94,7 @@ Commit the generated files.
 |---|---|
 | `Dto.vb` | one `Public Class` per object with `<JsonProperty("camelCase")>`; string enums as `NotInheritable Class` with `Public Const` |
 | `Interfaces.vb` | `Public Interface IPartsApi` with `Function Search(req As PartsSearchRequest) As Task(Of PartsSearchResponse)` |
-| `Dispatcher.Generated.vb` | `DispatcherExtensions.Register(dispatcher, api)` extension methods wiring `"parts.search"` to `IPartsApi.Search` |
+| `Dispatcher.Generated.vb` | `DispatcherExtensions.Register(dispatcher, api)` extension methods wiring `"parts.search"` to `IPartsApi.Search`; `MethodNames` and `MissingMethods(dispatcher)` (contract methods not registered yet, for a startup check) |
 | `Events.vb` | `BridgeEvents` with `Sub Progress(payload As ProgressEvent)` emitting `"event.progress"` |
 
 **OpenAPI 3.1** (`openapi.json`, when `openapi.out` is set): the same contract as an HTTP API, so the VB host can later be
@@ -110,7 +110,7 @@ replaced by any server without touching the UI (the client runtime's `HttpTransp
 Options: `title`, `version` (of the contract, `info`), `servers` (default `["/"]`), `basePath` (prefix for every path, default `""`),
 `eventsPath` (default `"/events"`, `false` to omit). Authentication is deliberately not part of the contract (`security: []`).
 
-Type mapping: `string`→`String`, `number`→`Double`, `int`→`Integer` (`.meta({ format: "int64" })`→`Long`), `boolean`→`Boolean`,
+Type mapping: `string`→`String`, `number`→`Double` (`.meta({ format: "decimal" })`→`Decimal`, for money / hours), `int`→`Integer` (`.meta({ format: "int64" })`→`Long`), `boolean`→`Boolean`,
 `array`→`List(Of T)`, `record`→`Dictionary(Of String, T)`, `unknown`→`JToken`, `X | null`→nullable, optional value types→`Nullable(Of T)`.
 Optional properties get `NullValueHandling.Ignore` so `Nothing` is omitted from JSON (zod `.optional()` rejects `null`).
 Unions, intersections, dates and bigints are rejected with a clear error.

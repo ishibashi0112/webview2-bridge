@@ -16,7 +16,8 @@ export {
   type WebConfig,
 } from "./config.js";
 export { BridgeCallError, createBridge, DEFAULT_BRIDGE_GLOBAL, type Bridge, type BridgeErrorShape } from "./bridge.js";
-export { launchHost, killTree, probeCdp, HostLaunchError, type HostApp, type LaunchHostOptions } from "./host.js";
+export { launchHost, killTree, probeCdp, listPages, waitForPage, HostLaunchError, type HostApp, type LaunchHostOptions, type WaitForPageOptions } from "./host.js";
+export { mockReturn, mockThrow, mockBusinessError, mockReset, DEFAULT_MOCK_GLOBAL, type MockErrorSpec, type MockOptions } from "./mock.js";
 export {
   createDb,
   diffRows,

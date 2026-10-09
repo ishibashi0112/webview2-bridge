@@ -16,12 +16,16 @@ import type { E2EConfig, E2EWorkerOptions, Layer, TrackSpec, TrackWhere } from "
 import { createDb, type Db, type SnapshotSpec } from "./db/index.js";
 import { checkAllowed, describeConnection } from "./db/guard.js";
 import { knexConfigFromEnv, loadEnvFiles } from "./db/env.js";
-import { launchHost, type HostApp } from "./host.js";
+import { launchHost, listPages, waitForPage, type HostApp, type WaitForPageOptions } from "./host.js";
 
 export interface E2ETestFixtures {
   testId: string;
   db: Db;
   bridge: Bridge;
+  /** 今開いているウィンドウ(ページ)全部。1 ウィンドウのアプリでは page だけ。screen ではブラウザのタブ */
+  hostWindows: () => Page[];
+  /** 条件に合うウィンドウが現れるまで待つ(例: `waitForWindow((p) => p.url().includes("#/screens/moduleReg"))`) */
+  waitForWindow: (predicate: (page: Page) => boolean | Promise<boolean>, options?: WaitForPageOptions) => Promise<Page>;
 }
 
 export interface E2EWorkerFixtures extends E2EWorkerOptions {
@@ -144,6 +148,17 @@ export const test = base.extend<E2ETestFixtures, E2EWorkerFixtures>({
         // ページが閉じているなど。スクリーンショットは補助情報なので黙って続ける
       }
     }
+  },
+
+  // 複数ウィンドウ(画面ごとに別の WebView2 窓を開くアプリ)。api / host は exe の BrowserContext、screen は Playwright の context
+  hostWindows: async ({ hostApp, context }, use) => {
+    const ctx = hostApp?.context ?? context;
+    await use(() => listPages(ctx));
+  },
+
+  waitForWindow: async ({ hostApp, context }, use) => {
+    const ctx = hostApp?.context ?? context;
+    await use((predicate, options) => waitForPage(ctx, predicate, options));
   },
 
   bridge: async ({ page, layer, e2e }, use) => {

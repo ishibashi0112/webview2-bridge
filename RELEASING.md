@@ -80,6 +80,8 @@ for p in @ishibashi0112/webview2-bridge-gen @ishibashi0112/webview2-bridge-clien
 **公開当日の動作確認は版を明示する。** pnpm 11 は `minimumReleaseAge`（既定 24 時間）で公開直後の版を黙って避け、条件を満たす一番新しい旧版を使う。
 `pnpm create webview2-bridge my-app` は翌日まで前の版で動くので、当日は `pnpm create webview2-bridge@0.4.0 my-app` のように書く
 （作ったアプリの `pnpm install` も同様で、pnpm が `pnpm-workspace.yaml` に `minimumReleaseAgeExclude` を自動追記して通す）。
+公開当日に新しい版をアプリに入れたときも同じで、`pnpm-workspace.yaml` に `minimumReleaseAgeExclude: [ "@ishibashi0112/webview2-bridge-gen@0.6.0" ]` のような行が足される。
+これは「公開から 24 時間以内でもこの版を使う」という pnpm への指示で、翌日以降は消してよい（残しても害は無い）。このリポジトリの雛形には残さない。
 
 ## 4. コミットとタグ
 

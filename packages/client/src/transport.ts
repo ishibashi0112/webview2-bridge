@@ -59,6 +59,11 @@ export const JsonRpcErrorCodes = {
   InternalError: -32603,
   /** アプリ定義エラーの既定値。VB 側の未処理例外はこのコード */
   ServerError: -32000,
+  /** 業務エラー。message をそのまま利用者に見せる。data は省略か { field: "要求の JSON 名" }（HANDOFF.md §5） */
+  Business: -32010,
+  /** 利用者向けエラーの範囲 -32019〜-32010。-32010 が汎用の業務エラー、-32011 以降はアプリが決める */
+  UserFacingMin: -32019,
+  UserFacingMax: -32010,
 } as const;
 
 export const EVENT_PREFIX = "event.";

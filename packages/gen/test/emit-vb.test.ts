@@ -70,6 +70,15 @@ describe("emitVb", () => {
     expect(d).not.toContain("Partial Public Class");
   });
 
+  it("emits MissingMethods so the host can detect unregistered implementations at startup (A-3)", () => {
+    const d = emitAll(kitchenSinkContract)["Dispatcher.Generated.vb"]!;
+    expect(d).toContain("Imports System.Collections.Generic");
+    expect(d).toContain("Imports System.Linq");
+    expect(d).toContain("<Extension>\n        Public Function MissingMethods(dispatcher As Dispatcher) As String()");
+    expect(d).toContain("Dim registered As New HashSet(Of String)(dispatcher.RegisteredMethods, StringComparer.Ordinal)");
+    expect(d).toContain("Return MethodNames.Where(Function(m) Not registered.Contains(m)).ToArray()");
+  });
+
   it("lets the runtime namespace be overridden", () => {
     const files = emitVb(toSchema(sampleContract), { ...opts, runtimeNamespace: "My.Runtime" });
     const byPath = Object.fromEntries(files.map((f) => [f.path, f.content]));
@@ -93,6 +102,102 @@ describe("emitVb", () => {
       events: {},
     });
     expect(() => emitVb(toSchema(bad), opts)).toThrow(/z\.object/);
+  });
+
+  it("names empty and symbol-only enum values so the Const compiles (A-1)", () => {
+    // 空文字は `_` 単独（VB では行継続文字）になってコンパイルできなかった。記号だけの値も同様
+    const c = defineContract({
+      methods: {
+        plan: {
+          list: {
+            input: z.object({}),
+            output: z.object({
+              priceWarn: z.enum(["", "N1", "N2", "N3"]),
+              op: z.enum(["-", "*", "<=", " ", "_", "★", "values", "Values"]),
+            }),
+          },
+        },
+      },
+      events: {},
+    });
+    const dto = emitAll(c)["Dto.vb"]!;
+    expect(dto).toContain('Public Const Empty As String = ""');
+    expect(dto).toContain('Public Const N1 As String = "N1"');
+    expect(dto).toContain('Public Const Hyphen As String = "-"');
+    expect(dto).toContain('Public Const Asterisk As String = "*"');
+    expect(dto).toContain('Public Const LessThanEqual As String = "<="');
+    expect(dto).toContain('Public Const Space As String = " "');
+    expect(dto).toContain('Public Const Underscore As String = "_"');
+    expect(dto).toContain('Public Const U2605 As String = "★"');
+    // 同じクラスの `Values` 配列とぶつかる値、大文字小文字だけ違う値は `_` を足す
+    expect(dto).toContain('Public Const Values_ As String = "values"');
+    expect(dto).toContain('Public Const Values__ As String = "Values"');
+    expect(dto).toContain('Public Shared ReadOnly Values As String() = {"-", "*", "<=", " ", "_", "★", "values", "Values"}');
+    expect(dto).not.toMatch(/Public Const _+ As/);
+  });
+
+  it("rejects method / property / event names that are members of System.Object (A-2)", () => {
+    const method = defineContract({
+      methods: { modules: { finalize: { input: z.object({ id: z.string() }), output: z.object({}) } } },
+      events: {},
+    });
+    expect(() => emitVb(toSchema(method), opts)).toThrow(GenerateError);
+    expect(() => emitVb(toSchema(method), opts)).toThrow(
+      /Method "finalize" would be generated as "Finalize", which is a member of System\.Object.*Rename it in the contract.*\(at methods\.modules\.finalize\)/,
+    );
+
+    const property = defineContract({
+      methods: { a: { b: { input: z.object({ toString: z.string() }), output: z.object({}) } } },
+      events: {},
+    });
+    expect(() => emitVb(toSchema(property), opts)).toThrow(
+      /Property "toString" would be generated as "ToString".*\(at methods\.a\.b\.input\.toString\)/,
+    );
+
+    // GetType は VB の予約語でもあるが、[GetType] と囲んでも Object.GetType とはぶつかるので同じく止める
+    const nested = defineContract({
+      methods: { a: { b: { input: z.object({}), output: z.object({ item: z.object({ getType: z.string() }) }) } } },
+      events: {},
+    });
+    expect(() => emitVb(toSchema(nested), opts)).toThrow(/Property "getType" would be generated as "GetType"/);
+
+    const event = defineContract({
+      methods: { a: { b: { input: z.object({}), output: z.object({}) } } },
+      events: { getHashCode: z.object({ v: z.number() }) },
+    });
+    expect(() => emitVb(toSchema(event), opts)).toThrow(/Event "getHashCode" would be generated as "GetHashCode".*\(at events\.getHashCode\)/);
+
+    // 似た名前（toStringValue / equalsCount）は通る
+    const ok = defineContract({
+      methods: { a: { finalizeVersion: { input: z.object({ toStringValue: z.string() }), output: z.object({ equalsCount: z.number() }) } } },
+      events: { finalized: z.object({}) },
+    });
+    expect(() => emitVb(toSchema(ok), opts)).not.toThrow();
+  });
+
+  it("maps number with format decimal to Decimal and keeps Double as the default (A-4)", () => {
+    const c = defineContract({
+      methods: {
+        parts: {
+          price: {
+            input: z.object({ qty: z.number().int() }),
+            output: z.object({
+              cost: z.number().meta({ format: "decimal" }),
+              unit: z.number().meta({ format: "decimal" }).optional(),
+              ratio: z.number(),
+            }),
+          },
+        },
+      },
+      events: {},
+    });
+    // zod の .meta({ format }) は JSON Schema にそのまま出る（OpenAPI にも写る）
+    expect(toSchema(c).methods["parts"]!["price"]!.output.properties!["cost"]!.format).toBe("decimal");
+    const dto = emitAll(c)["Dto.vb"]!;
+    expect(dto).toContain("Public Property Cost As Decimal");
+    expect(dto).toContain("Public Property Unit As Nullable(Of Decimal)");
+    expect(dto).toContain("Public Property Ratio As Double");
+    expect(dto).toContain("Public Property Qty As Integer");
   });
 
   it("rejects colliding generated names", () => {

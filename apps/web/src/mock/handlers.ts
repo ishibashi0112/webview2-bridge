@@ -1,4 +1,4 @@
-import { BridgeError, JsonRpcErrorCodes, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
+import { BridgeError, JsonRpcErrorCodes, businessError, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
 import type { Contract } from "@webview2-bridge/contract";
 import type { Part } from "../generated/contract-types";
 
@@ -25,6 +25,10 @@ export const handlers: MemoryHandlers<Contract> = {
       // "error" で検索すると VB 側の例外相当（-32000）を返す
       if (input.keyword.toLowerCase() === "error") {
         throw new BridgeError({ code: JsonRpcErrorCodes.ServerError, message: "Simulated failure", data: "System.InvalidOperationException" });
+      }
+      // "%" を含むと業務エラー（-32010）。VB 側 PartsApi の JsonRpcException.Business と同じ形
+      if (input.keyword.includes("%")) {
+        throw businessError("キーワードに % は使えません", { field: "keyword" });
       }
       emit("progress", { percent: 0, message: "検索開始" });
       await sleep(150);

@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Threading.Tasks
 Imports MyApp.Contract
+Imports WebView2Bridge.Runtime
 
 ''' <summary>
 ''' "customers.*" の実装。人間が書く VB はこのようなクラスと MainForm だけ。
@@ -28,9 +29,12 @@ Public Class CustomersApi
     End Sub
 
     Public Async Function List(req As CustomersListRequest) As Task(Of CustomersListResponse) Implements ICustomersApi.List
+        Dim kw = If(req.Keyword, "")
+        ' 業務エラーの見本（-32010）: message は利用者にそのまま見せる文、第 2 引数は結び付く入力項目（要求の JSON 名）。
+        ' 画面（main.tsx）は isUserFacingError / errorField で受けて入力欄の下に出す。モック（bridge.ts）も同じ条件で businessError を投げる
+        If kw.Contains("%") Then Throw JsonRpcException.Business("キーワードに % は使えません", "keyword")
         _events?.Progress(New ProgressEvent With {.Percent = 0})
         Await Task.Delay(100).ConfigureAwait(False)
-        Dim kw = If(req.Keyword, "")
         Dim hit = Data.Where(Function(c) c.Name.Contains(kw)).ToList()
         _events?.Progress(New ProgressEvent With {.Percent = 100})
         Return New CustomersListResponse With {.Items = hit}

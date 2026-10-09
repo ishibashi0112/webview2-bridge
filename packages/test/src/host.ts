@@ -144,6 +144,51 @@ export async function launchHost(options: LaunchHostOptions): Promise<HostApp> {
   }
 }
 
+export interface WaitForPageOptions {
+  /** 待つ時間 ms(既定 15000) */
+  timeout?: number | undefined;
+  /** 失敗メッセージに添える説明(例: "#/screens/moduleReg のウィンドウ") */
+  description?: string | undefined;
+}
+
+/** 今開いているページ(= WebView2 のウィンドウ)。about:blank と閉じたものは除く */
+export function listPages(context: BrowserContext): Page[] {
+  return context.pages().filter((p) => !p.isClosed() && p.url() !== "about:blank");
+}
+
+/**
+ * 条件に合うページが現れるまで待つ(画面ごとに別ウィンドウを開くアプリ用。新しいウィンドウは同じ BrowserContext に新しい Page として現れる)。
+ * 例: waitForPage(context, (p) => p.url().includes("#/screens/moduleReg"))
+ */
+export async function waitForPage(
+  context: BrowserContext,
+  predicate: (page: Page) => boolean | Promise<boolean>,
+  options: WaitForPageOptions = {},
+): Promise<Page> {
+  const timeout = options.timeout ?? 15_000;
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    for (const p of context.pages()) {
+      if (p.isClosed()) continue;
+      if (await predicate(p)) {
+        try {
+          await p.waitForLoadState("domcontentloaded", { timeout: Math.max(1_000, deadline - Date.now()) });
+        } catch {
+          // 読み込み途中でも呼び出し側の expect が待つので、ここでは止めない
+        }
+        return p;
+      }
+    }
+    if (Date.now() > deadline) {
+      const urls = listPages(context).map((p) => p.url());
+      throw new Error(
+        `${timeout}ms 待っても条件に合うウィンドウが現れません${options.description !== undefined ? `(${options.description})` : ""}。今のウィンドウ: ${urls.length > 0 ? urls.join(", ") : "(なし)"}`,
+      );
+    }
+    await sleep(250);
+  }
+}
+
 function pickPage(pages: Page[], devUrl: string | undefined): Page | undefined {
   if (pages.length === 0) return undefined;
   if (devUrl !== undefined) {

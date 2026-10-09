@@ -32,13 +32,17 @@ const off = client.events.on("progress", (p) => console.log(p.percent)); // host
 - Host errors arrive as `BridgeError` with the JSON-RPC `code` / `message` / `data`
   (`-32000` + exception type name for unhandled VB exceptions, or the code of a `JsonRpcException`).
 - `BridgeTimeoutError` after `timeoutMs` (default 30 s); `BridgeDisposedError` when the transport was disposed.
+- **Business errors** (code `-32010`, thrown on the VB side with `JsonRpcException.Business(message, field)`): the `message` is meant for
+  the user as is, and `data.field` (optional) names the request property the error belongs to. `isBusinessError(e)`, `isUserFacingError(e)`
+  (codes `-32010`‥`-32019`, so apps can add their own user-facing codes from `-32011`), `errorField(e)`, and `businessError(message, { field })`
+  for mocks.
 
 ## Transports
 
 | Transport | Use |
 |---|---|
 | `WebView2Transport` | inside the WinForms host (`window.chrome.webview`). Wire format: JSON-RPC 2.0 over `postMessage` / `PostWebMessageAsJson` |
-| `MemoryTransport<C>(handlers, { delay })` | plain browser / tests. Handlers are typed from the contract: `{ parts: { search: async (input, { emit }) => output } }`; `emit("progress", payload)` simulates host events. Handler exceptions become `-32000` errors like on the VB side |
+| `MemoryTransport<C>(handlers, { delay })` | plain browser / tests. Handlers are typed from the contract: `{ parts: { search: async (input, { emit }) => output } }`; `emit("progress", payload)` simulates host events. Handler exceptions become `-32000` errors like on the VB side. `override("parts.search", handler \| { result } \| { error })` swaps one method's response (returns an undo function; `resetOverrides()` clears all). `exposeMemoryTransport(transport)` publishes it as `window.__webview2BridgeMock` in dev builds so screen tests can call `mockReturn` / `mockThrow` from `@ishibashi0112/webview2-bridge-test` |
 | `HttpTransport({ baseUrl, headers?, credentials?, timeoutMs?, events? })` | a server that implements the contract over HTTP (the `openapi.json` the generator emits): `POST <baseUrl>/<namespace>/<method>` with the input as JSON body; 4xx/5xx bodies carrying `{ code, message, data }` become `BridgeError` with that code. Events are read from `GET <baseUrl>/events` (Server-Sent Events, connected on the first `on()`, reconnecting after `retryMs`); pass `events: false` if the server has none. `headers` may be a function (e.g. to attach a fresh token) and applies to the event stream too |
 | your own | implement `Transport { call(method, params); on(method, handler) }` (e.g. msw) and add it to `selectTransport` factories |
 

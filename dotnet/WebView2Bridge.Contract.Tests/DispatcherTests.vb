@@ -150,6 +150,45 @@ Public Class DispatcherTests
     End Function
 
     <Fact>
+    Public Async Function Business_Error_Has_Code_Message_And_Field() As Task
+        Dim api As New FakePartsApi With {
+            .Behavior = Function(req) As Task(Of PartsSearchResponse)
+                            Throw JsonRpcException.Business("キーワードに % は使えません", "keyword")
+                        End Function
+        }
+        Dim res = P(Await Create(api).HandleAsync("{""jsonrpc"":""2.0"",""id"":1,""method"":""parts.search"",""params"":{""keyword"":""a%""}}"))
+        Assert.Equal(JsonRpcErrorCodes.Business, res("error").Value(Of Integer)("code"))
+        Assert.Equal(-32010, res("error").Value(Of Integer)("code"))
+        Assert.Equal("キーワードに % は使えません", res("error").Value(Of String)("message"))
+        Assert.Equal("keyword", res("error")("data").Value(Of String)("field"))
+        Assert.True(JsonRpcErrorCodes.IsUserFacing(JsonRpcErrorCodes.Business))
+        Assert.True(JsonRpcErrorCodes.IsUserFacing(-32019))
+        Assert.False(JsonRpcErrorCodes.IsUserFacing(-32020))
+        Assert.False(JsonRpcErrorCodes.IsUserFacing(JsonRpcErrorCodes.ServerError))
+    End Function
+
+    <Fact>
+    Public Async Function Business_Error_Without_Field_Has_Null_Data() As Task
+        Dim api As New FakePartsApi With {
+            .Behavior = Function(req) As Task(Of PartsSearchResponse)
+                            Throw JsonRpcException.Business("在庫が足りません")
+                        End Function
+        }
+        Dim res = P(Await Create(api).HandleAsync("{""jsonrpc"":""2.0"",""id"":1,""method"":""parts.search"",""params"":{""keyword"":""x""}}"))
+        Assert.Equal(JsonRpcErrorCodes.Business, res("error").Value(Of Integer)("code"))
+        Assert.Equal("在庫が足りません", res("error").Value(Of String)("message"))
+        Assert.Equal(JTokenType.Null, res("error")("data").Type)
+    End Function
+
+    <Fact>
+    Public Sub MissingMethods_Lists_Contract_Methods_Not_Registered()
+        Dim d As New Dispatcher()
+        Assert.Equal("parts.search", Assert.Single(d.MissingMethods()))
+        d.Register(New FakePartsApi())
+        Assert.Empty(d.MissingMethods())
+    End Sub
+
+    <Fact>
     Public Async Function Notification_Without_Id_Returns_Nothing() As Task
         Dim api As New FakePartsApi()
         Dim res = Await Create(api).HandleAsync("{""jsonrpc"":""2.0"",""method"":""parts.search"",""params"":{""keyword"":""x""}}")

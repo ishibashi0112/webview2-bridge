@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Threading.Tasks
 Imports WebView2Bridge.Contract
+Imports WebView2Bridge.Runtime
 
 ''' <summary>
 ''' "parts.*" の実装。Phase 3 では固定データのスタブ。
@@ -36,6 +37,10 @@ Public Class PartsApi
         ' "error" で検索するとホスト側例外（-32000）になることを確認できる
         If String.Equals(req.Keyword, "error", StringComparison.OrdinalIgnoreCase) Then
             Throw New InvalidOperationException("Simulated failure")
+        End If
+        ' "%" を含む keyword は業務エラー（-32010）。message は利用者にそのまま見せ、field で入力欄に結び付ける（HANDOFF.md §5）
+        If req.Keyword.Contains("%") Then
+            Throw JsonRpcException.Business("キーワードに % は使えません", "keyword")
         End If
 
         Progress(0, "検索開始")

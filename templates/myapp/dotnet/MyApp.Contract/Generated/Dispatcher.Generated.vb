@@ -7,6 +7,8 @@ Option Explicit On
 Option Infer On
 
 Imports System
+Imports System.Collections.Generic
+Imports System.Linq
 Imports System.Runtime.CompilerServices
 Imports WebView2Bridge.Runtime
 
@@ -17,6 +19,14 @@ Namespace Global.MyApp.Contract
 
         ''' <summary>契約に含まれる全メソッド名</summary>
         Public ReadOnly MethodNames As String() = {"customers.list"}
+
+        ''' <summary>契約にあるのに登録されていないメソッド名（起動時の登録漏れの確認用。空なら全て登録済み）</summary>
+        <Extension>
+        Public Function MissingMethods(dispatcher As Dispatcher) As String()
+            If dispatcher Is Nothing Then Throw New ArgumentNullException(NameOf(dispatcher))
+            Dim registered As New HashSet(Of String)(dispatcher.RegisteredMethods, StringComparer.Ordinal)
+            Return MethodNames.Where(Function(m) Not registered.Contains(m)).ToArray()
+        End Function
 
         ''' <summary>"customers.*" の実装を登録する</summary>
         <Extension>
