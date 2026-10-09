@@ -1,4 +1,4 @@
-import { HttpTransport, MemoryTransport, createClient, selectTransport } from "@ishibashi0112/webview2-bridge-client";
+import { HttpTransport, MemoryTransport, createClient, exposeMemoryTransport, selectTransport } from "@ishibashi0112/webview2-bridge-client";
 import { contract, type Contract } from "@webview2-bridge/contract";
 import { handlers } from "./mock/handlers";
 
@@ -21,4 +21,6 @@ export const client = createClient(contract, selected.transport);
 // 本番ビルドでは公開しない(VITE_EXPOSE_BRIDGE=1 を付けてビルドしたときだけ公開)
 if (import.meta.env.DEV || import.meta.env.VITE_EXPOSE_BRIDGE === "1") {
   (window as unknown as Record<string, unknown>)["__webview2Bridge"] = client;
+  // 画面テスト(e2e/screen)がモックの応答をテストごとに差し替えられるよう(mockReturn / mockThrow)、MemoryTransport も公開する
+  if (selected.transport instanceof MemoryTransport) exposeMemoryTransport(selected.transport);
 }

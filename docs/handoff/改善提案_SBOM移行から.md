@@ -24,14 +24,16 @@
 | P2 | B-2 | 画面ファイルのキャッシュで、入れ替え後に古い画面が出る | 雛形 | 小 | **対応済み 0.6.0** |
 | P2 | B-3 | 業務エラー(入力欄つき)の決まりが無く、アプリごとに作る | ランタイム / client | 中 | **対応済み 0.6.0**(-32010、-32010〜-32019 が利用者向け) |
 | P2 | B-4 | 配布の形: exe の隣に DLL などを並べずフォルダにまとめる(opt-in) | 雛形 | 中 | **対応済み 0.6.0**(`AppFilesDir`。Windows 実機の確認は未実施) |
-| P3 | A-4 | 小数が Double にしかならない(お金・工数は Decimal にしたい) | gen | 中 | |
-| P3 | C-1 | 画面テストで、モックの応答をテストごとに差し替えられない | client / test | 中 | |
-| P3 | C-2 | host 層のテストが 1 ウィンドウ前提 | test | 中 | |
-| P3 | B-5 | 共有フォルダへの配布スクリプト(使用中の検出・控え・記録) | 雛形 | 中 | |
-| P3 | D-1 | 文書: 公開直後の版を入れるときの pnpm の minimumReleaseAge | 文書 | 小 | |
+| P3 | A-4 | 小数が Double にしかならない(お金・工数は Decimal にしたい) | gen | 中 | **対応済み 0.6.0**(`z.number().meta({ format: "decimal" })`) |
+| P3 | C-1 | 画面テストで、モックの応答をテストごとに差し替えられない | client / test | 中 | **対応済み 0.6.0**(`mockReturn` / `mockThrow` / `mockBusinessError`) |
+| P3 | C-2 | host 層のテストが 1 ウィンドウ前提 | test | 中 | **対応済み 0.6.0**(`hostWindows` / `waitForWindow`。実機は SBOM で) |
+| P3 | B-5 | 共有フォルダへの配布スクリプト(使用中の検出・控え・記録) | 雛形 | 中 | **対応済み 0.6.0**(`scripts/deploy.ps1`。Windows で未実行) |
+| P3 | D-1 | 文書: 公開直後の版を入れるときの pnpm の minimumReleaseAge | 文書 | 小 | **対応済み 0.6.0** |
 
 P1 の 3 件で決めたこと(空文字・記号の名前の規則、`WEBVIEW2_BRIDGE_DEV`、`NewWindowRequested` は既定のブラウザへ)は HANDOFF.md §10「SBOM 移行の改善提案 P1 の 3 件(2026-10-08、0.5.2)」、
-P2 の 4 件で決めたこと(`MissingMethods` は DevMode で確かめる、業務エラーのコードと範囲、`AppFilesDir` の仕組み)は同 §10「SBOM 移行の改善提案 P2 の 4 件(2026-10-09、0.6.0)」にある。P1 と P2 はまとめて 0.6.0 として出す(0.5.2 は公開しない)。
+P2 の 4 件で決めたこと(`MissingMethods` は DevMode で確かめる、業務エラーのコードと範囲、`AppFilesDir` の仕組み)は同 §10「SBOM 移行の改善提案 P2 の 4 件(2026-10-09、0.6.0)」、
+P3 の 5 件で決めたこと(Decimal は `format: "decimal"`、モックの差し替えはデータだけを渡す、配布スクリプトは入れ替える項目以外に触らない)は同 §10「SBOM 移行の改善提案 P3 の 5 件(2026-10-09、0.6.0)」にある。
+P1〜P3 はまとめて 0.6.0 として出す(0.5.2 は公開しない)。Windows 実機の確認項目は HANDOFF.md §14「Windows でまとめて確認する項目(0.6.0)」に一覧化した。
 
 ---
 
@@ -82,7 +84,7 @@ Public Const _ As String = ""   ' VB では "_" 単独は識別子にならな�
 
 **完了条件**: `dotnet/WebView2Bridge.Contract.Tests` に、登録漏れを `MissingMethods` で検出するテストを足す。
 
-### A-4. 小数が Double にしかならない(P3)
+### A-4. 小数が Double にしかならない(P3・対応済み 0.6.0)
 
 **現状**: `emit-vb.ts` の `resolveType` は `number` を `Double`、`integer` を `Integer`(`format: "int64"` なら `Long`)にする。Decimal を選ぶ方法が無い。
 
@@ -247,7 +249,7 @@ export function businessError(message: string, method?: string, field?: string):
 
 **注意**: 以前の形で出力したフォルダに古い DLL が直下に残ると、`SBOM\` より先にそちらが読まれる。SBOM はビルド後に直下の `*.dll` / `*.pdb` / `wwwroot` / `runtimes` を消すターゲットを入れた(`SbomRemoveOldLayout`)。
 
-### B-5. 共有フォルダへの配布スクリプト(P3)
+### B-5. 共有フォルダへの配布スクリプト(P3・対応済み 0.6.0。Windows で未実行)
 
 **SBOM の実装**: `scripts/deploy.ps1`(Windows PowerShell 5.1 で動く書き方、UTF-8 BOM 付き)。2026-10-08 に会社 PC で、テスト用フォルダへの配布と使用中の検出を確認した(控えから戻すのは Linux の PowerShell 7 でだけ確認)。
 
@@ -266,7 +268,7 @@ export function businessError(message: string, method?: string, field?: string):
 
 ## C. テスト(packages/test・client の MemoryTransport)
 
-### C-1. 画面テストで、モックの応答をテストごとに差し替えられない(P3)
+### C-1. 画面テストで、モックの応答をテストごとに差し替えられない(P3・対応済み 0.6.0)
 
 **現状**: 雛形の `web/src/bridge.ts` は `new MemoryTransport<Contract>(handlers)` に固定のモックを渡す。テスト(e2e/screen)からは応答を変えられないので、「取得に失敗したとき」「権限が無いとき」などはモックのデータに特別な値を仕込んで再現するしかない。
 
@@ -278,7 +280,7 @@ export function businessError(message: string, method?: string, field?: string):
 - 開発ビルドで `window.__webview2BridgeMock.override("app.getContext", (input) => ({ … }))` / `.reset()` を公開する(`__webview2Bridge` と同じく開発ビルドだけ)
 - packages/test に、`page.addInitScript` で起動前に差し替えるヘルパ `mockOverride(page, method, handler)` を足す。handler は文字列化してページへ送るので、純粋な関数に限る(またはデータだけを渡す `mockReturn(page, method, value)` / `mockThrow(page, method, { code, message, data })`)
 
-### C-2. host 層のテストが 1 ウィンドウ前提(P3)
+### C-2. host 層のテストが 1 ウィンドウ前提(P3・対応済み 0.6.0)
 
 **現状**: `packages/test/src/host.ts` は、CDP で取ったページのうち最初の `about:blank` でないもの(`pages.find(...) ?? pages[0]`)を使う。
 
@@ -290,7 +292,7 @@ export function businessError(message: string, method?: string, field?: string):
 
 ## D. 文書
 
-### D-1. 公開直後の版を入れるときの pnpm の minimumReleaseAge(P3)
+### D-1. 公開直後の版を入れるときの pnpm の minimumReleaseAge(P3・対応済み 0.6.0)
 
 **SBOM で困ったこと**: 公開した当日の `@ishibashi0112/spreadsheet-grid@0.45.0` を入れたとき、pnpm 11 が「公開から 24 時間以内の版」として扱い、`pnpm-workspace.yaml` の `minimumReleaseAgeExclude` にその版を自動で足した(何のための記述か分からず、後で調べることになった)。webview2-bridge も、新しい版を公開してすぐアプリに入れる流れなので、同じことが起きる。
 

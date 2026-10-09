@@ -175,6 +175,31 @@ describe("emitVb", () => {
     expect(() => emitVb(toSchema(ok), opts)).not.toThrow();
   });
 
+  it("maps number with format decimal to Decimal and keeps Double as the default (A-4)", () => {
+    const c = defineContract({
+      methods: {
+        parts: {
+          price: {
+            input: z.object({ qty: z.number().int() }),
+            output: z.object({
+              cost: z.number().meta({ format: "decimal" }),
+              unit: z.number().meta({ format: "decimal" }).optional(),
+              ratio: z.number(),
+            }),
+          },
+        },
+      },
+      events: {},
+    });
+    // zod の .meta({ format }) は JSON Schema にそのまま出る（OpenAPI にも写る）
+    expect(toSchema(c).methods["parts"]!["price"]!.output.properties!["cost"]!.format).toBe("decimal");
+    const dto = emitAll(c)["Dto.vb"]!;
+    expect(dto).toContain("Public Property Cost As Decimal");
+    expect(dto).toContain("Public Property Unit As Nullable(Of Decimal)");
+    expect(dto).toContain("Public Property Ratio As Double");
+    expect(dto).toContain("Public Property Qty As Integer");
+  });
+
   it("rejects colliding generated names", () => {
     // .meta({ id }) の名前が、メソッドから導出される Request 名とぶつかる
     const collide = defineContract({

@@ -2,7 +2,8 @@
 
 webview2-bridge で作ったアプリ(WinForms + WebView2 + React)の動作確認を、Playwright のテストコードで置き換えるための部品。
 
-- **フィクスチャ**: `page`(WebView2 のページ)/ `bridge`(契約メソッドを直接呼ぶ)/ `db`(Knex を包む DB ヘルパ。前後差分と自動の後片付け)/ `testId`
+- **フィクスチャ**: `page`(WebView2 のページ)/ `bridge`(契約メソッドを直接呼ぶ)/ `db`(Knex を包む DB ヘルパ。前後差分と自動の後片付け)/ `testId` / `hostWindows` と `waitForWindow`(画面ごとに別ウィンドウを開くアプリ用)
+- **モックの差し替え**(screen): `mockReturn(page, "ns.method", value)` / `mockThrow(page, "ns.method", { code, message, data })` / `mockBusinessError(page, "ns.method", message, field)`。アプリ側が開発ビルドで `exposeMemoryTransport(transport)`(client)を呼んでいれば、テストごとに応答を差し替えられる
 - **ホスト起動**: exe を `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=NNNN` 付きで起動し、CDP で接続する。VB は無改修
 - **レポータ**: 結果を AI チャットに貼れる Markdown(`test-results/report.md`)にまとめ、失敗があればクリップボードへ
 - **doctor**: 会社 PC の前提(ブラウザ / exe と CDP / テスト DB とガード)を 1 コマンドで確認

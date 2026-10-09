@@ -1,4 +1,4 @@
-import { expect, test } from "@ishibashi0112/webview2-bridge-test";
+import { expect, mockReturn, mockThrow, test } from "@ishibashi0112/webview2-bridge-test";
 
 // L1: 画面ロジック。Vite dev サーバー + MemoryTransport(src/mock/handlers.ts)で動く。DB も VB も不要。
 // 観点はこの見本の振る舞い(README / handlers.ts)から: 検索結果の表示、limit、入力検証、ホスト例外、0 件、progress
@@ -43,6 +43,21 @@ test('keyword に "%" を含むと業務エラー(-32010)が message と field �
   await expect(page.getByTestId("search-error")).toContainText("キーワードに % は使えません");
   await expect(page.getByTestId("search-error")).toContainText("field: keyword");
   await expect(page.getByTestId("search-results")).toHaveCount(0);
+});
+
+test("mockThrow で差し替えた失敗(-32603 等)がそのテストの間だけ表示される", async ({ page }) => {
+  await mockThrow(page, "parts.search", { code: -32603, message: "差し替えた失敗", data: { reason: "test" } });
+  await page.getByTestId("search-submit").click();
+  await expect(page.getByTestId("search-error-kind")).toHaveText("BridgeError -32603");
+  await expect(page.getByTestId("search-error")).toContainText("差し替えた失敗");
+});
+
+test("mockReturn で差し替えた応答が一覧に出る", async ({ page }) => {
+  await mockReturn(page, "parts.search", { items: [{ partNo: "Z-999", name: "差し替え", qty: 1, updatedAt: "2026-10-09T00:00:00Z" }] });
+  await page.getByTestId("search-submit").click();
+  const rows = page.getByTestId("search-results").locator("tbody tr");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Z-999");
 });
 
 test("該当が無いときは「該当なし」の行が出る", async ({ page }) => {

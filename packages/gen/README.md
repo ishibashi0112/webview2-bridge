@@ -110,7 +110,7 @@ replaced by any server without touching the UI (the client runtime's `HttpTransp
 Options: `title`, `version` (of the contract, `info`), `servers` (default `["/"]`), `basePath` (prefix for every path, default `""`),
 `eventsPath` (default `"/events"`, `false` to omit). Authentication is deliberately not part of the contract (`security: []`).
 
-Type mapping: `string`→`String`, `number`→`Double`, `int`→`Integer` (`.meta({ format: "int64" })`→`Long`), `boolean`→`Boolean`,
+Type mapping: `string`→`String`, `number`→`Double` (`.meta({ format: "decimal" })`→`Decimal`, for money / hours), `int`→`Integer` (`.meta({ format: "int64" })`→`Long`), `boolean`→`Boolean`,
 `array`→`List(Of T)`, `record`→`Dictionary(Of String, T)`, `unknown`→`JToken`, `X | null`→nullable, optional value types→`Nullable(Of T)`.
 Optional properties get `NullValueHandling.Ignore` so `Nothing` is omitted from JSON (zod `.optional()` rejects `null`).
 Unions, intersections, dates and bigints are rejected with a clear error.

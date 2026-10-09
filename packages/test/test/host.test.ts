@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createBridge } from "../src/bridge.js";
-import { HostLaunchError, launchHost, probeCdp } from "../src/host.js";
+import { HostLaunchError, launchHost, listPages, probeCdp, waitForPage } from "../src/host.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fakeHost = path.join(here, "fixtures/fake-host.sh");
@@ -64,6 +64,16 @@ describe.skipIf(!canRun)("launchHost + createBridge (fake host = headless Chromi
       expect(await bridge.call("parts.search", { keyword: "M6" })).toEqual({ items: [{ partNo: "A-001", name: "Bolt M6" }] });
       const err = await bridge.expectError("parts.fail");
       expect(err.code).toBe(-32000);
+      // 複数ウィンドウ: 2 つ目のウィンドウ(= 同じ BrowserContext の新しい Page)を waitForPage で拾える
+      const waiting = waitForPage(app.context, (p) => p.url().includes("w=2"), { timeout: 15_000, description: "2 つ目" });
+      const second = await app.context.newPage();
+      await second.goto(`${devUrl}?w=2`);
+      const found = await waiting;
+      expect(found).toBe(second);
+      expect(listPages(app.context).map((p) => p.url()).sort()).toEqual([devUrl, `${devUrl}?w=2`].sort());
+      await second.close();
+      expect(listPages(app.context)).toHaveLength(1);
+      await expect(waitForPage(app.context, (p) => p.url().includes("w=3"), { timeout: 600, description: "3 つ目" })).rejects.toThrow(/3 つ目.*今のウィンドウ/);
       // 同じポートで 2 つ目は起動できない
       await expect(launchHost({ exe: fakeHost, devUrl, cdpPort: 9333, env, chromium })).rejects.toThrow(HostLaunchError);
     } finally {

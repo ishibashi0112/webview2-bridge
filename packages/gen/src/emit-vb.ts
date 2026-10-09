@@ -278,7 +278,8 @@ class VbContext {
         if (s.enum) return this.enumType(s, owner, prop, path, nullable);
         return { name: "String", isValueType: false, nullable };
       case "number":
-        return { name: "Double", isValueType: true, nullable };
+        // z.number().meta({ format: "decimal" }) → Decimal（金額・工数向け。既定は Double。TS / OpenAPI は number のまま）
+        return { name: s.format === "decimal" ? "Decimal" : "Double", isValueType: true, nullable };
       case "integer":
         return { name: s.format === "int64" ? "Long" : "Integer", isValueType: true, nullable };
       case "boolean":

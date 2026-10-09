@@ -1,4 +1,4 @@
-import { HttpTransport, MemoryTransport, businessError, createClient, selectTransport, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
+import { HttpTransport, MemoryTransport, businessError, createClient, exposeMemoryTransport, selectTransport, type MemoryHandlers } from "@ishibashi0112/webview2-bridge-client";
 import { contract, type Contract } from "../../contract/contract";
 
 // ブラウザ単体（pnpm dev）で動かすためのモック。VB 側 CustomersApi と振る舞いを揃える
@@ -38,4 +38,6 @@ export const client = createClient(contract, selected.transport);
 // 本番ビルドでは公開しない(VITE_EXPOSE_BRIDGE=1 を付けてビルドしたときだけ公開)
 if (import.meta.env.DEV || import.meta.env.VITE_EXPOSE_BRIDGE === "1") {
   (window as unknown as Record<string, unknown>)["__webview2Bridge"] = client;
+  // 画面テスト(e2e/screen)がモックの応答をテストごとに差し替えられるよう(mockReturn / mockThrow)、MemoryTransport も公開する
+  if (selected.transport instanceof MemoryTransport) exposeMemoryTransport(selected.transport);
 }
