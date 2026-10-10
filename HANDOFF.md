@@ -392,6 +392,12 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - **D-1 文書**: RELEASING.md と雛形 README に `minimumReleaseAgeExclude`（公開から 24 時間以内でもその版を使う pnpm への指示。翌日以降は消してよい）の説明
 - 検証: Linux で gen 49（A-4 のテスト 1 件追加）、client 40（override / exposeMemoryTransport 5 件追加）、test 48（mock 3 件追加、host.test に複数ウィンドウ）、create 4、web screen 9（mockThrow / mockReturn 2 件追加）、`pnpm -r typecheck`、`pnpm gen:check`、`pnpm build`。雛形は `pnpm pack` した client と test の 0.6.0 を node_modules に差し替えて typecheck と screen 7 件を確認した。**差し替え後は `web/node_modules/.vite` を消すこと**（Vite の依存キャッシュがパッケージの中身の変更に気づかず、`exposeMemoryTransport` が無い古い束を使って画面が出なくなった）。VB のビルドは 2026-10-09 に Linux で確認した（P2 と同じ `dotnet build` / `dotnet test`。A-4 の `Decimal` は本体の契約に無いので gen のスナップショットのみで、VB で `Decimal` を往復する確認は §14 の手順 9）。Windows 実機・`deploy.ps1` は未確認
 
+**0.6.0 の公開前整備（2026-10-10）**
+- 背景: VS Code の Problems に `templates/myapp/web/src/bridge.ts` / `main.tsx` の「`businessError` / `exposeMemoryTransport` / `errorField` / `isUserFacingError` が無い」というエラーが出ていた。原因は雛形の `node_modules` に公開済みの古い client（0.4.0）が入っていたこと（0.6.0 で足した export を知らない）。コード側の問題ではなく、リポジトリの `pnpm -r typecheck` / `pnpm -r test` / `pnpm gen:check` / `dotnet build` / `dotnet test` はすべて通る。**0.6.0 を公開したあと `templates/myapp` で `pnpm install` すれば消える**（公開当日は `minimumReleaseAge` に注意。§14 既知の注意点）。未公開の版に雛形を合わせている間はこのエラーが出るものと理解しておく
+- RELEASING 手順 1 に従い、雛形の依存宣言をマイナー最新に揃えた: `@playwright/test ^1.64.0`、`tedious ^20.3.3`、`vite ^8.3.4`、`@vitejs/plugin-react ^6.1.2`（React 19.3.0 / zod 4.6.5 / @types は既に最新）。メジャー（TypeScript 7.0、oracledb 26）は上げない（oracledb 26 は雛形で未確認。TypeScript 7 は 0.3.1 の方針どおり）
+- 作業ツリーの `templates/myapp/dotnet/MyApp.sln` が CRLF だった（§14 既知の注意点に書いてあった件）を `rm` → `git checkout` で LF に戻し、`sync:template` で同梱コピーも LF にした。0.6.0 の tgz からは LF になる
+- 検証: `pnpm gen init <dir> --name Tpl` → `dotnet build dotnet/Tpl.sln -c Release` が 0 警告で通る。gen のテスト 49 件（init.test.ts の同期・版の一致を含む）が通る
+
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 
 ```markdown
@@ -502,7 +508,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 - **pnpm の「Choose which packages to build」プロンプト**: `pnpm create` / `pnpm dlx` の実行時に、依存の esbuild（gen → tsx → esbuild）のビルド許可を聞かれる。init は tsx / esbuild を使わないので、何も選ばず Enter で進めてよい（「All packages were added to allowBuilds with value false」と出るが問題ない）。作ったアプリ側の `pnpm install` は雛形の `pnpm-workspace.yaml` に `allowBuilds: { esbuild: true }` があるので聞かれない
 - **npm 上の版の実態**（2026-09-19 に `npm view <pkg> versions` で確認）: gen は 0.2.0 / 0.3.0 / 0.4.0、create は 0.3.0 / 0.4.0、client は 0.1.0〜0.3.1 / 0.4.0。**gen と create の 0.3.1 は公開されていない**（0.3.1 の publish は client だけ成功していた。§10 の「0.3.1 公開済み」は client のみが正しい）。0.4.0 で 3 つとも揃ったので実害は無いが、公開後は 4 パッケージの `npm view <pkg> versions` を確認する（RELEASING.md 手順 3 に追記）。2026-09-22 の 0.5.0 は 4 つとも公開できた。ただし公開直後の `npm view <pkg> version`（= `dist-tags.latest`）は数分間古い版を返すことがある（create が 0.4.0 と表示された後、`versions` には 0.5.0 があり、少し待つと `latest` も 0.5.0 になった）。判定は `npm view <pkg> versions` で行い、`latest` は時間をおいて見直す
 - **公開直後は tgz が数分間 404 になることがある**（2026-10-06）: gen 0.5.1 は公開（13:42:33Z）から約 5 分間、`npm view` では版が見えるのに tgz の取得が 404 で、`pnpm dlx create-webview2-bridge@0.5.1` が `ERR_PNPM_FETCH_404` で落ちた（client / create / test の tgz は先に取れていた）。404 で落ちたら数分おいて再実行する
-- **雛形の `MyApp.sln` は公開 tgz では CRLF**（0.4.0〜0.5.1 で確認）: リポジトリの index は LF なので、公開に使った Mac の作業ツリーのファイルだけが CRLF で、それがそのまま同梱されていると推定（`dotnet` が CRLF で書いたファイルは、index が LF に正規化されても作業ツリーには CRLF のまま残る）。害は無い（新規アプリの最初の `git add` で `CRLF will be replaced by LF` の警告が出て、LF でコミットされる）。直すなら Mac で `rm templates/myapp/dotnet/MyApp.sln && git checkout -- templates/myapp/dotnet/MyApp.sln` を実行してから `pnpm build`
+- **雛形の `MyApp.sln` は公開 tgz では CRLF**（0.4.0〜0.5.1 で確認）: リポジトリの index は LF なので、公開に使った Mac の作業ツリーのファイルだけが CRLF で、それがそのまま同梱されていると推定（`dotnet` が CRLF で書いたファイルは、index が LF に正規化されても作業ツリーには CRLF のまま残る）。害は無い（新規アプリの最初の `git add` で `CRLF will be replaced by LF` の警告が出て、LF でコミットされる）。直すなら Mac で `rm templates/myapp/dotnet/MyApp.sln && git checkout -- templates/myapp/dotnet/MyApp.sln` を実行してから `pnpm build`（2026-10-10 に実施。0.6.0 以降の tgz は LF）
 - `WebView2Bridge.Contract.Tests` は net8.0。VS 2022 17.8 以降なら .NET 8 SDK が同梱されている。無ければ sln から一時的に外す
 - `package.json` の `packageManager` は pnpm 11 系。Corepack が有効なら初回にダウンロード確認が出る（Enter で続行）
 - Linux で Host までビルドするには Microsoft ビルドの SDK（`Microsoft.NET.Sdk.WindowsDesktop` 同梱）が要る（Ubuntu ディストリ版には無い）。Mac の公式インストーラ版と Windows は不要

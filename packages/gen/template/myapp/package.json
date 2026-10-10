@@ -16,10 +16,10 @@
   "devDependencies": {
     "@ishibashi0112/webview2-bridge-gen": "^0.6.0",
     "@ishibashi0112/webview2-bridge-test": "^0.6.0",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "knex": "^3.3.0",
     "oracledb": "^7.0.1",
-    "tedious": "^20.0.0",
+    "tedious": "^20.3.3",
     "zod": "^4.6.5"
   }
 }
