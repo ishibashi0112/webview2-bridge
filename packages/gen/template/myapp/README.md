@@ -71,6 +71,7 @@ dotnet build dotnet/MyApp.sln -c Release         # dist を bin/Release/net48/ww
 exe の隣に DLL や wwwroot を並べたくない（共有フォルダで母艦と同じ階層に置く等）ときは、`MyApp.Host.vbproj` の `<AppFilesDir>` を `MyApp\` にする。
 直下は `MyApp.Host.exe` と `MyApp.Host.exe.config` だけになり、残り（DLL、`WebView2Loader.dll`、wwwroot）は `MyApp\` に入る
 （`App.config` の `probing privatePath` と `MainForm.FilesDirName` がこのフォルダ名を前提にしているので、名前は変えない。exe はどちらの形でも動く）。
+空に戻してビルドすると `MyApp\` は消えて元の形に戻る（`RemoveAppFilesDirLayout`。古い `MyApp\wwwroot` が残って優先されることはない）。
 
 共有フォルダへ配布するときは `scripts/deploy.ps1`（Windows PowerShell 5.1 で動く）:
 

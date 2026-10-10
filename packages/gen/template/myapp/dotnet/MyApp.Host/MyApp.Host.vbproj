@@ -56,4 +56,11 @@
     <Delete Files="@(OldLayoutFiles)" />
     <RemoveDir Directories="$(OutDir)wwwroot;$(OutDir)runtimes" />
   </Target>
+  <Target Name="RemoveAppFilesDirLayout" AfterTargets="Build" Condition="'$(AppFilesDir)' == ''">
+    <!--
+      AppFilesDir を空に戻したとき: 前の形の MyApp\ が残っていると MainForm.WwwRoot が MyApp\wwwroot を優先して古い画面が出るので消す
+      （MyApp\ の DLL と WebView2Loader.dll は増分クリーンが消すが、wwwroot は Copy タスクの出力なので残る）
+    -->
+    <RemoveDir Directories="$(OutDir)MyApp" />
+  </Target>
 </Project>
