@@ -32,15 +32,6 @@ Public NotInheritable Class BroadcastEmitter
         End SyncLock
     End Sub
 
-    ''' <summary>今の送り先の数</summary>
-    Public ReadOnly Property Count As Integer
-        Get
-            SyncLock _gate
-                Return _targets.Count
-            End SyncLock
-        End Get
-    End Property
-
     Public Sub Emit(method As String, params As Object) Implements IBridgeEmitter.Emit
         Dim targets As IBridgeEmitter()
         SyncLock _gate

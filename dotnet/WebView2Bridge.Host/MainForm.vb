@@ -58,13 +58,15 @@ Public Class MainForm
             core.Settings.AreDefaultContextMenusEnabled = True
             core.Settings.IsStatusBarEnabled = False
 
+            Dim devUrl = DevServerUrl()
+
             ' 契約の実装を Dispatcher に登録する
             Dim dispatcher As New Dispatcher()
             _bridge = New WebViewBridge(WebView, dispatcher)
             ' サブウィンドウ（オプション機能。HANDOFF.md §10）: window.open / target="_blank" のうち自アプリの URL は、同じ Dispatcher に
             ' つないだ別ウィンドウで開き、features の位置・大きさに置く。外部の http(s) は既定のブラウザ、それ以外は止める。
             ' 使わないアプリは NewWindowRequested で http(s) をブラウザに渡し、それ以外を止めるだけにする（雛形の MainForm の形）
-            _windows = New BridgeWindows(env, dispatcher, Me, AddressOf MapVirtualHost)
+            _windows = New BridgeWindows(env, dispatcher, Me, If(devUrl, $"https://{VirtualHost}/"), AddressOf MapVirtualHost)
             _windows.Attach(_bridge)
             ' Host → Web の通知は開いている全部の窓に届く
             Dim events As New BridgeEvents(_windows.Emitter)
@@ -81,7 +83,6 @@ Public Class MainForm
             End If
             _bridge.Attach()
 
-            Dim devUrl = DevServerUrl()
             If devUrl IsNot Nothing Then
                 Text = $"WebView2Bridge.Host - dev ({devUrl})"
                 core.Navigate(devUrl)

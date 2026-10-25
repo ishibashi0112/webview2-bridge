@@ -19,17 +19,17 @@ Namespace Global.WebView2Bridge.WinForms
 
 ''' <summary>
 ''' サブウィンドウ（オプション機能。使うアプリだけが MainForm で有効にする）。画面の window.open(url, name, features) を受けて
-'''   自アプリの URL（開いた画面と同じ origin = https://app.local、Debug の dev サーバー）→ ブリッジ付きの新しいウィンドウで開き、
+'''   自アプリの URL（appUrl と同じ origin = https://app.local、Debug の dev サーバー）→ ブリッジ付きの新しいウィンドウで開き、
 '''     features の位置・大きさ（CSS px）に DPI を掛けて Bounds（枠込みの外形）に写す。スクリーン外に出る分は作業領域に詰める
 '''   それ以外の http(s) → 既定のブラウザ（今までの MainForm の振る舞いと同じ）
 '''   その他（about:blank 等）→ 止める
 ''' 新しいウィンドウは同じ CoreWebView2Environment と同じ Dispatcher を使い、e.NewWindow に渡すので
 ''' window.opener と window.open の戻り値（WindowProxy）が成立する（開いた側から close() できる。name が同じなら同じ窓が使われる）。
-''' Settings（F12 / F5 等）は開いた側から写し、仮想ホストのマッピングのような CoreWebView2 ごとの設定は configure で掛ける。
+''' Settings（F12 / F5 等）は開いた側から全項目を写し、仮想ホストのマッピングのような CoreWebView2 ごとの設定は configure で掛ける。
 ''' Host → Web の通知は Emitter が全窓に同報する。子ウィンドウは Owner を持たず（左右に並べるため）、owner が閉じると全部閉じる。
 ''' 使い方（MainForm、EnsureCoreWebView2Async の後。core.NewWindowRequested の既定の処理の代わり）:
 '''   _bridge = New WebViewBridge(WebView, dispatcher)
-'''   _windows = New BridgeWindows(env, dispatcher, Me, AddressOf MapVirtualHost)
+'''   _windows = New BridgeWindows(env, dispatcher, Me, If(devUrl, "https://app.local/"), AddressOf MapVirtualHost)
 '''   _windows.Attach(_bridge)
 '''   Dim events As New BridgeEvents(_windows.Emitter)
 ''' </summary>
@@ -59,6 +59,7 @@ Public NotInheritable Class BridgeWindows
     Private ReadOnly _environment As CoreWebView2Environment
     Private ReadOnly _dispatcher As Dispatcher
     Private ReadOnly _owner As Form
+    Private ReadOnly _appUrl As Uri
     Private ReadOnly _configure As Action(Of CoreWebView2)
     Private ReadOnly _emitter As New BroadcastEmitter()
     Private ReadOnly _attached As New List(Of BridgeWindow)()
@@ -68,17 +69,26 @@ Public NotInheritable Class BridgeWindows
     ''' <param name="environment">MainForm の EnsureCoreWebView2Async に渡したもの（子ウィンドウも同じユーザーデータで開く。e.NewWindow の条件）</param>
     ''' <param name="dispatcher">MainForm の Dispatcher（WebView2 に依存しないので全窓で共有する。Register は MainForm の 1 回でよい）</param>
     ''' <param name="owner">MainForm。これが閉じると子ウィンドウも全部閉じる</param>
+    ''' <param name="appUrl">
+    ''' 自アプリの URL（MainForm が開く URL。https://app.local/ や Debug の dev サーバー）。この origin（scheme・host・port）への
+    ''' window.open だけをブリッジ付きの窓で開く。開いた画面の今の URL では判定しない（外部のサイトへ移った画面から、そのサイトの窓にブリッジを付けないため）
+    ''' </param>
     ''' <param name="configure">
     ''' 子ウィンドウの CoreWebView2 に掛ける設定（SetVirtualHostNameToFolderMapping など CoreWebView2 ごとのもの）。
     ''' e.NewWindow に渡す前（読み込み前）に呼ぶ。Settings は開いた側から写すので要らない
     ''' </param>
-    Public Sub New(environment As CoreWebView2Environment, dispatcher As Dispatcher, owner As Form, Optional configure As Action(Of CoreWebView2) = Nothing)
+    Public Sub New(environment As CoreWebView2Environment, dispatcher As Dispatcher, owner As Form, appUrl As String, Optional configure As Action(Of CoreWebView2) = Nothing)
         If environment Is Nothing Then Throw New ArgumentNullException(NameOf(environment))
         If dispatcher Is Nothing Then Throw New ArgumentNullException(NameOf(dispatcher))
         If owner Is Nothing Then Throw New ArgumentNullException(NameOf(owner))
+        Dim app As Uri = Nothing
+        If Not Uri.TryCreate(appUrl, UriKind.Absolute, app) OrElse (app.Scheme <> Uri.UriSchemeHttp AndAlso app.Scheme <> Uri.UriSchemeHttps) Then
+            Throw New ArgumentException("appUrl must be an absolute http(s) URL such as https://app.local/", NameOf(appUrl))
+        End If
         _environment = environment
         _dispatcher = dispatcher
         _owner = owner
+        _appUrl = app
         _configure = configure
         AddHandler _owner.FormClosed, AddressOf OnOwnerClosed
     End Sub
@@ -87,13 +97,6 @@ Public NotInheritable Class BridgeWindows
     Public ReadOnly Property Emitter As IBridgeEmitter
         Get
             Return _emitter
-        End Get
-    End Property
-
-    ''' <summary>今開いている子ウィンドウ（Attach した MainForm は含まない）</summary>
-    Public ReadOnly Property OpenWindows As IReadOnlyList(Of Form)
-        Get
-            Return _children.ConvertAll(Function(w) w.Form)
         End Get
     End Property
 
@@ -151,7 +154,7 @@ Public NotInheritable Class BridgeWindows
     Private Async Sub OnNewWindowRequested(opener As BridgeWindow, e As CoreWebView2NewWindowRequestedEventArgs)
         ' VB は大文字小文字を区別しないので、ローカル変数を uri と名付けると型 Uri の Shared メンバーが引けなくなる
         Dim target As Uri = Nothing
-        If Not Uri.TryCreate(e.Uri, UriKind.Absolute, target) OrElse Not IsAppUrl(opener, target) Then
+        If Not Uri.TryCreate(e.Uri, UriKind.Absolute, target) OrElse Not IsAppUrl(target) Then
             ' ブリッジの無い素の WebView2 窓は開かせない。外部の http(s) は既定のブラウザへ
             e.Handled = True
             If target IsNot Nothing AndAlso (target.Scheme = Uri.UriSchemeHttp OrElse target.Scheme = Uri.UriSchemeHttps) Then
@@ -220,12 +223,9 @@ Public NotInheritable Class BridgeWindows
         CloseAll()
     End Sub
 
-    ''' <summary>自アプリの URL か: 開いた画面の今の URL と scheme・host・port が同じ（https://app.local、Debug の dev サーバー）</summary>
-    Private Shared Function IsAppUrl(opener As BridgeWindow, target As Uri) As Boolean
-        Dim source As Uri = Nothing
-        If opener.Core Is Nothing OrElse Not Uri.TryCreate(opener.Core.Source, UriKind.Absolute, source) Then Return False
-        If source.Scheme <> Uri.UriSchemeHttp AndAlso source.Scheme <> Uri.UriSchemeHttps Then Return False
-        Return Uri.Compare(source, target, UriComponents.SchemeAndServer, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase) = 0
+    ''' <summary>自アプリの URL か: appUrl と scheme・host・port が同じ（https://app.local、Debug の dev サーバー）</summary>
+    Private Function IsAppUrl(target As Uri) As Boolean
+        Return Uri.Compare(_appUrl, target, UriComponents.SchemeAndServer, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase) = 0
     End Function
 
     ''' <summary>
@@ -268,17 +268,37 @@ Public NotInheritable Class BridgeWindows
         Return BitConverter.ToInt32(BitConverter.GetBytes(value), 0)
     End Function
 
-    ''' <summary>子ウィンドウにも開いた側と同じ Settings を掛ける（Release で F12 / F5 が効かない、などを子ウィンドウでも保つ）</summary>
+    ''' <summary>
+    ''' 子ウィンドウにも開いた側と同じ Settings を掛ける（Release で F12 / F5 が効かない、などを子ウィンドウでも保つ）。
+    ''' SDK 1.0.4191 の CoreWebView2Settings の全項目。新しい項目は古い WebView2 Runtime だと読み書きで例外になるので、1 項目ずつ写す
+    ''' </summary>
     Private Shared Sub CopySettings(source As CoreWebView2Settings, target As CoreWebView2Settings)
-        target.AreDevToolsEnabled = source.AreDevToolsEnabled
-        target.AreBrowserAcceleratorKeysEnabled = source.AreBrowserAcceleratorKeysEnabled
-        target.AreDefaultContextMenusEnabled = source.AreDefaultContextMenusEnabled
-        target.AreDefaultScriptDialogsEnabled = source.AreDefaultScriptDialogsEnabled
-        target.IsStatusBarEnabled = source.IsStatusBarEnabled
-        target.IsZoomControlEnabled = source.IsZoomControlEnabled
-        target.IsBuiltInErrorPageEnabled = source.IsBuiltInErrorPageEnabled
-        target.IsGeneralAutofillEnabled = source.IsGeneralAutofillEnabled
-        target.IsPasswordAutosaveEnabled = source.IsPasswordAutosaveEnabled
+        CopySetting(NameOf(source.AreDevToolsEnabled), Sub() target.AreDevToolsEnabled = source.AreDevToolsEnabled)
+        CopySetting(NameOf(source.AreBrowserAcceleratorKeysEnabled), Sub() target.AreBrowserAcceleratorKeysEnabled = source.AreBrowserAcceleratorKeysEnabled)
+        CopySetting(NameOf(source.AreDefaultContextMenusEnabled), Sub() target.AreDefaultContextMenusEnabled = source.AreDefaultContextMenusEnabled)
+        CopySetting(NameOf(source.AreDefaultScriptDialogsEnabled), Sub() target.AreDefaultScriptDialogsEnabled = source.AreDefaultScriptDialogsEnabled)
+        CopySetting(NameOf(source.AreHostObjectsAllowed), Sub() target.AreHostObjectsAllowed = source.AreHostObjectsAllowed)
+        CopySetting(NameOf(source.IsBuiltInErrorPageEnabled), Sub() target.IsBuiltInErrorPageEnabled = source.IsBuiltInErrorPageEnabled)
+        CopySetting(NameOf(source.IsScriptEnabled), Sub() target.IsScriptEnabled = source.IsScriptEnabled)
+        CopySetting(NameOf(source.IsStatusBarEnabled), Sub() target.IsStatusBarEnabled = source.IsStatusBarEnabled)
+        CopySetting(NameOf(source.IsWebMessageEnabled), Sub() target.IsWebMessageEnabled = source.IsWebMessageEnabled)
+        CopySetting(NameOf(source.IsZoomControlEnabled), Sub() target.IsZoomControlEnabled = source.IsZoomControlEnabled)
+        CopySetting(NameOf(source.UserAgent), Sub() target.UserAgent = source.UserAgent)
+        CopySetting(NameOf(source.IsGeneralAutofillEnabled), Sub() target.IsGeneralAutofillEnabled = source.IsGeneralAutofillEnabled)
+        CopySetting(NameOf(source.IsPasswordAutosaveEnabled), Sub() target.IsPasswordAutosaveEnabled = source.IsPasswordAutosaveEnabled)
+        CopySetting(NameOf(source.IsPinchZoomEnabled), Sub() target.IsPinchZoomEnabled = source.IsPinchZoomEnabled)
+        CopySetting(NameOf(source.IsSwipeNavigationEnabled), Sub() target.IsSwipeNavigationEnabled = source.IsSwipeNavigationEnabled)
+        CopySetting(NameOf(source.HiddenPdfToolbarItems), Sub() target.HiddenPdfToolbarItems = source.HiddenPdfToolbarItems)
+        CopySetting(NameOf(source.IsReputationCheckingRequired), Sub() target.IsReputationCheckingRequired = source.IsReputationCheckingRequired)
+        CopySetting(NameOf(source.IsNonClientRegionSupportEnabled), Sub() target.IsNonClientRegionSupportEnabled = source.IsNonClientRegionSupportEnabled)
+    End Sub
+
+    Private Shared Sub CopySetting(name As String, copy As Action)
+        Try
+            copy()
+        Catch ex As Exception
+            Debug.WriteLine($"[BridgeWindows] setting {name} not copied: {ex.Message}")
+        End Try
     End Sub
 
     Private Shared Sub OpenInBrowser(target As Uri)
