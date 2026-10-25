@@ -37,6 +37,12 @@ Public NotInheritable Class WebViewBridge
         End Get
     End Property
 
+    Public ReadOnly Property WebView As WebView2
+        Get
+            Return _webView
+        End Get
+    End Property
+
     ''' <summary>EnsureCoreWebView2Async の後に呼ぶ。WebMessageReceived を購読する</summary>
     Public Sub Attach()
         If _attached Then Return

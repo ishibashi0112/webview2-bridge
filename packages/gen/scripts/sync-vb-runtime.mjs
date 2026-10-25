@@ -11,7 +11,7 @@ const dest = path.resolve(here, "../vb-runtime");
 
 export const VB_RUNTIME_SOURCES = {
   runtime: { dir: "dotnet/WebView2Bridge.Runtime", files: ["JsonRpc.vb", "Dispatcher.vb", "IBridgeEmitter.vb"] },
-  winforms: { dir: "dotnet/WebView2Bridge.WinForms", files: ["WebViewBridge.vb"] },
+  winforms: { dir: "dotnet/WebView2Bridge.WinForms", files: ["WebViewBridge.vb", "BroadcastEmitter.vb", "BridgeWindows.vb"] },
 };
 
 for (const [kind, src] of Object.entries(VB_RUNTIME_SOURCES)) {

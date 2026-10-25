@@ -1,7 +1,8 @@
 import { BridgeError, BridgeValidationError, errorField, isUserFacingError } from "@ishibashi0112/webview2-bridge-client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { client, transportMode } from "./bridge";
 import type { Part, ProgressEvent } from "./generated/contract-types";
+import { openScreen, type ScreenSlot } from "./windows";
 
 interface ErrorInfo {
   kind: string;
@@ -32,6 +33,8 @@ export function App() {
   const [error, setError] = useState<ErrorInfo | null>(null);
   const [progress, setProgress] = useState<ProgressEvent | null>(null);
   const [log, setLog] = useState<string[]>([]);
+  // 開いたサブウィンドウ(WindowProxy)。閉じるボタンで close() する
+  const subWindows = useRef(new Map<string, Window>());
 
   // Host → Web イベント（event.progress）の購読。アンマウント時に解除
   useEffect(() => {
@@ -60,12 +63,39 @@ export function App() {
     }
   }
 
+  // この画面を別ウィンドウで開いて左 / 右に置く。名前を slot ごとに固定するので、同じボタンなら同じ窓に出る。
+  // この見本は画面が 1 つなので route は何でも同じ検索画面になる(画面を route で切り替えるアプリはその route を渡す)
+  function openSub(slot: ScreenSlot) {
+    const name = `parts-${slot}`;
+    const w = openScreen("#/parts", { slot, name });
+    if (w !== null) subWindows.current.set(name, w);
+  }
+
+  function closeSubs() {
+    for (const w of subWindows.current.values()) if (!w.closed) w.close();
+    subWindows.current.clear();
+  }
+
   return (
     <main className="app">
       <header>
         <h1>webview2-bridge</h1>
         <span className={`badge badge-${transportMode}`} data-testid="transport-badge">transport: {transportMode}</span>
+        <span className="badge" data-testid="window-name">window: {window.name || "main"}</span>
       </header>
+
+      <section className="windows">
+        <button type="button" data-testid="windows-open-left" onClick={() => openSub("left")}>
+          左に開く
+        </button>
+        <button type="button" data-testid="windows-open-right" onClick={() => openSub("right")}>
+          右に開く
+        </button>
+        <button type="button" data-testid="windows-close" onClick={closeSubs}>
+          開いた窓を閉じる
+        </button>
+        <span className="muted">この画面を別ウィンドウで開き、スクリーンの左半分 / 右半分に置く</span>
+      </section>
 
       <form onSubmit={(e) => void onSubmit(e)} className="search">
         <label>

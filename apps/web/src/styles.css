@@ -11,6 +11,8 @@ h2 { font-size: 14px; margin: 16px 0 4px; }
 .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #888; color: #fff; }
 .badge-webview2 { background: #2b7de9; }
 .badge-memory { background: #6a9f3a; }
+.windows { display: flex; gap: 8px; align-items: center; margin: 12px 0 0; flex-wrap: wrap; font-size: 12px; }
+.windows button { padding: 4px 10px; font-size: 13px; }
 .search { display: flex; gap: 12px; align-items: end; margin: 16px 0; flex-wrap: wrap; }
 .search label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .search input { padding: 6px 8px; font-size: 14px; min-width: 16em; }

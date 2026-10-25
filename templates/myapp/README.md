@@ -44,7 +44,7 @@ myapp/
 
 ```sh
 pnpm install          # esbuild の postinstall 許可は pnpm-workspace.yaml に設定済み
-pnpm gen              # contract.ts → schema → TS 型 / OpenAPI / VB 生成物 / VB ランタイム / WebViewBridge（11 ファイル）
+pnpm gen              # contract.ts → schema → TS 型 / OpenAPI / VB 生成物 / VB ランタイム / WinForms の Bridge/（13 ファイル）
 pnpm dev              # http://localhost:5173 をブラウザで開く。MemoryTransport のモックで動く
 ```
 
