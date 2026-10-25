@@ -29,7 +29,7 @@
 
 ## コマンド
 - `pnpm install` / `pnpm gen` / `pnpm gen:check` / `pnpm -r test` / `pnpm -r typecheck`
-- `pnpm --filter web test`（screen。Mac は初回 `npx playwright install chromium`。Claude Code on the web の環境は Chromium をダウンロードできないので `E2E_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium-1194/chrome-linux/chrome` を付ける）/ `pnpm --filter web test:e2e`（api + host。Windows のみ）/ `pnpm --filter web test:doctor`
+- `pnpm --filter web test`（screen。Mac は初回 `npx playwright install chromium`。Claude Code on the web の環境は Chromium をダウンロードできないので `E2E_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium` を付ける。同梱 Chromium へのシンボリックリンクで、同梱版が変わっても追従する）/ `pnpm --filter web test:e2e`（api + host。Windows のみ）/ `pnpm --filter web test:doctor`
 - `pnpm --filter web dev`（http://localhost:5173、MemoryTransport で動く） / `pnpm --filter web build`（→ apps/web/dist）
 - `dotnet build dotnet/WebView2Bridge.Contract` （Mac と Claude Code on the web でも通ること）
 - `dotnet test dotnet/WebView2Bridge.Contract.Tests` （Mac と Claude Code on the web で通ること）
@@ -37,7 +37,7 @@
 - `pnpm build`（packages/* を dist/ に。公開用）/ `pnpm pack:npm` / `dotnet pack dotnet/WebView2Bridge.Runtime -c Release -o artifacts/nuget`
 - 公開は RELEASING.md の手順（Mac から。バージョンは packages/*/package.json と dotnet/Directory.Build.props の WebView2BridgeVersion）
 - Mac の dotnet SDK は `~/.dotnet` に導入済み（`export PATH="$HOME/.dotnet:$PATH"`）
-- Claude Code on the web は環境 `webview2-bridge (.NET)` を使う（setup script が .NET SDK 8 を入れる。Custom ネットワークで `builds.dotnet.microsoft.com` / `packages.microsoft.com` / `api.nuget.org` が通る）。`dotnet` は `/usr/share/dotnet` の Microsoft ビルド（`dotnet-sdk-8.0`）で PATH 済み。WinForms（Host.exe）までビルドでき `dotnet test` も通るが、実行（WebView2）と `test:e2e` は Windows のみ。雛形の確認は `pnpm gen init <dir> --name X` → `dotnet build dotnet/X.sln -c Release`（0.6.0 未公開のうちは雛形側の `pnpm install` は通らない）
+- Claude Code on the web は環境 `webview2-bridge (.NET)` を使う（setup script が .NET SDK 8 を入れる。Custom ネットワークで `builds.dotnet.microsoft.com` / `packages.microsoft.com` / `api.nuget.org` が通る）。`dotnet` は `/usr/share/dotnet` の Microsoft ビルド（`dotnet-sdk-8.0`）で PATH 済み。WinForms（Host.exe）までビルドでき `dotnet test` も通るが、実行（WebView2）と `test:e2e` は Windows のみ。雛形の確認は `pnpm gen init <dir> --name X` → `dotnet build dotnet/X.sln -c Release`。雛形側の `pnpm install` → `E2E_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium pnpm test` も通る（雛形は npm の最新版 Playwright を入れるので、同梱 Chromium と版がずれる。この指定が必須）
 
 ## Windows での実行確認（Phase 3）
 1. `pnpm --filter web dev` を起動
