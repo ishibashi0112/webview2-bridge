@@ -11,7 +11,7 @@
     <AssemblyName>WebView2Bridge.WinForms</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>WebView2Bridge.WinForms</PackageId>
-    <Description>WinForms glue for webview2-bridge: WebViewBridge connects a Microsoft.Web.WebView2 control to the WebView2Bridge.Runtime dispatcher (WebMessageReceived → Dispatcher → PostWebMessageAsJson) and marshals host → web notifications to the UI thread. Optional BridgeWindows opens same-app window.open requests as bridged sub-windows placed at the requested position.</Description>
+    <Description>WinForms glue for webview2-bridge: WebViewBridge connects a Microsoft.Web.WebView2 control to the WebView2Bridge.Runtime dispatcher (WebMessageReceived → Dispatcher → PostWebMessageAsJson) and marshals host → web notifications to the UI thread. Optional BridgeWindows opens same-app window.open requests as bridged sub-windows placed at the requested position. Optional MinimizedMemorySaver asks WebView2 to use less memory while the form is minimized.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>

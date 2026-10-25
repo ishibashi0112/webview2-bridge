@@ -56,6 +56,7 @@ describe("generate (with VB runtime output)", () => {
         "dotnet/App.Host/Bridge/WebViewBridge.vb",
         "dotnet/App.Host/Bridge/BroadcastEmitter.vb",
         "dotnet/App.Host/Bridge/BridgeWindows.vb",
+        "dotnet/App.Host/Bridge/MinimizedMemorySaver.vb",
       ].sort(),
     );
     const generated = await readdir(path.join(dir, "dotnet/App.Contract/Generated"));

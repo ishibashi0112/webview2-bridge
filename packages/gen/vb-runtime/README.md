@@ -2,7 +2,7 @@
 
 VB.NET ランタイムのコピー。**手で編集しない。**
 
-唯一の正はリポジトリの `dotnet/WebView2Bridge.Runtime/*.vb` と `dotnet/WebView2Bridge.WinForms/*.vb`（WebViewBridge / BroadcastEmitter / BridgeWindows）。
+唯一の正はリポジトリの `dotnet/WebView2Bridge.Runtime/*.vb` と `dotnet/WebView2Bridge.WinForms/*.vb`（WebViewBridge / BroadcastEmitter / BridgeWindows / MinimizedMemorySaver）。
 `pnpm --filter @ishibashi0112/webview2-bridge-gen sync:vb-runtime`（`pnpm build` でも自動実行）でここへコピーされ、
 npm パッケージに同梱される。`vb-runtime.test.ts` が dotnet/ と一致していることを検証する。
 

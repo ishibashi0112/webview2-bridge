@@ -36,5 +36,17 @@ _windows.Attach(_bridge)
 Dim events As New BridgeEvents(_windows.Emitter)
 ```
 
+### Save memory while minimized (opt-in)
+
+A minimized `Form` does not tell its `WebView2` anything. `MinimizedMemorySaver` hides the control while the form is
+minimized (`IsVisible = False`, so rendering memory can be released) and sets `MemoryUsageTargetLevel = Low`;
+restoring sets it back to `Normal` and shows it again (focus is returned if the WebView2 had it). Scripts and messaging keep
+running, so pending calls and notifications are not affected. Best effort: how much is released depends on the WebView2 Runtime.
+`BridgeWindows` applies it to child windows when the opener has it. It detaches when the form closes.
+
+```vb
+MinimizedMemorySaver.Attach(Me, WebView)
+```
+
 Targets `net48`. Depends on `WebView2Bridge.Runtime` and `Microsoft.Web.WebView2`.
 The front-end counterpart is `@ishibashi0112/webview2-bridge-client` on npm.

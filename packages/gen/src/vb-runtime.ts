@@ -1,5 +1,5 @@
 /**
- * VB ランタイム（JsonRpc / Dispatcher / IBridgeEmitter / WebViewBridge / BroadcastEmitter / BridgeWindows）を生成物として書き出す。
+ * VB ランタイム（JsonRpc / Dispatcher / IBridgeEmitter / WebViewBridge / BroadcastEmitter / BridgeWindows / MinimizedMemorySaver）を生成物として書き出す。
  *
  * NuGet（WebView2Bridge.Runtime / WebView2Bridge.WinForms）を使わず、npm の gen だけで
  * アプリを成立させるための機能。ソースはパッケージ同梱の vb-runtime/（dotnet/ のコピー）。
@@ -17,7 +17,7 @@ export type VbRuntimeKind = "runtime" | "winforms";
 /** 同梱している VB ランタイムのファイル名 */
 export const VB_RUNTIME_FILES: Record<VbRuntimeKind, readonly string[]> = {
   runtime: ["JsonRpc.vb", "Dispatcher.vb", "IBridgeEmitter.vb"],
-  winforms: ["WebViewBridge.vb", "BroadcastEmitter.vb", "BridgeWindows.vb"],
+  winforms: ["WebViewBridge.vb", "BroadcastEmitter.vb", "BridgeWindows.vb", "MinimizedMemorySaver.vb"],
 };
 
 const VB_RUNTIME_DESCRIPTION: Record<VbRuntimeKind, string> = {

@@ -121,7 +121,7 @@ nested objects `<Owner><Prop>`, array items singularized (`items` → `Item`).
 ## VB runtime without NuGet
 
 The VB.NET runtime (`Dispatcher`, `JsonRpc`, `IBridgeEmitter`) and the WinForms glue (`WebViewBridge`, plus the opt-in
-sub-window support `BridgeWindows` / `BroadcastEmitter`) are bundled
+sub-window support `BridgeWindows` / `BroadcastEmitter` and the opt-in `MinimizedMemorySaver`) are bundled
 in this package. Point `vb.runtime.outDir` / `vb.winforms.outDir` at your projects and the generator writes them as
 auto-generated files, so **no custom NuGet package is needed** — your Contract project only references `Newtonsoft.Json`
 and your Host only `Microsoft.Web.WebView2`.
@@ -149,7 +149,7 @@ this npm package and running the generator again (`--check` reports outdated cop
 | `eventsClass` | `BridgeEvents` | generated events helper class name |
 | `emitterInterface` | `IBridgeEmitter` | runtime emitter interface name |
 | `runtime.outDir` | — | write the bundled VB runtime (3 files) here; omit when using the NuGet package or a ProjectReference |
-| `winforms.outDir` | — | write the bundled WinForms glue (3 files: `WebViewBridge.vb`, `BroadcastEmitter.vb`, `BridgeWindows.vb`) here; omit when using the NuGet package or a ProjectReference |
+| `winforms.outDir` | — | write the bundled WinForms glue (4 files: `WebViewBridge.vb`, `BroadcastEmitter.vb`, `BridgeWindows.vb`, `MinimizedMemorySaver.vb`) here; omit when using the NuGet package or a ProjectReference |
 
 ## Programmatic use
 

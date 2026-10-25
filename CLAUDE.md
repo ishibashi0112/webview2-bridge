@@ -44,3 +44,4 @@
 2. `set WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` して `dotnet run --project dotnet/WebView2Bridge.Host`（Debug）
 3. 環境変数なしの確認は `pnpm --filter web build` → `dotnet build dotnet/WebView2Bridge.sln` → exe を起動（`https://app.local/index.html`）
 4. 自動テスト: `pnpm --filter web test:doctor`（ブラウザ / exe の CDP 起動 / DB）→ `pnpm --filter web test:e2e`（api 4 件 + host 2 件。dev サーバーは自動起動）
+5. メモリ: exe を起動したまま PowerShell で `.\scripts\measure-memory.ps1`（exe と WebView2 のプロセスを種類別に集計。`-Name <exe 名>` で雛形のアプリや純粋な WinForms のアプリも測れる。HANDOFF.md §10「最小化中の省メモリと計測」）

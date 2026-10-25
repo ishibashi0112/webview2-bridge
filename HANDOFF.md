@@ -426,6 +426,22 @@ Mac でホストをビルドする場合は `<EnableWindowsTargeting>true</Enabl
 - **テスト**: `e2e/screen/windows.spec.ts` 1 件（右に開く → `waitForWindow` で `#/parts` の窓 → `window: parts-right`・`transport: memory`・`window.opener` → 子で検索して 3 件 → もう一度押しても popup が増えず状態が残る → 閉じるボタンで閉じる）。名前を外すと落ちることを確認した。api / host のテストは足していない（実機の複数ウィンドウは §14 の手順で確かめる）
 - 検証（Linux、Claude Code on the web）: `pnpm -r typecheck`、`pnpm -r test`（client 40、gen 49、test 48、create 4、web screen 10）、`pnpm gen:check`（7 files）、`dotnet build dotnet/WebView2Bridge.sln`（Debug / Release とも 0 警告）、`dotnet test dotnet/WebView2Bridge.Contract.Tests`（19 件）、`pnpm gen init` で作ったアプリの `dotnet build -c Release`（`Bridge/` の 3 ファイル込みで 0 警告）。**WebView2 での動作は Windows 実機で未確認**（§14「サブウィンドウ（A）を Windows で確認する項目」）
 
+**最小化中の省メモリと計測（2026-10-25）**
+- 背景: 利用者から「純粋な VB.NET の WinForms（100MB 未満）より WebView2 のアプリ（100MB 超）はメモリが多いので抑えたい」。差の大半は Chromium のプロセス一式（ブラウザ・GPU・ユーティリティ・レンダラー）の固定費で、設定では消せない。案 A〜H の比較と測り方は [docs/handoff/メモリ使用量.md](docs/handoff/メモリ使用量.md)。狙いは「共有する・伸ばさない・休ませる」
+- 決めたこと: (1) まず測る（`scripts/measure-memory.ps1`）。(2) 最小化中の省メモリ（案 C）を **WinForms ランタイムに opt-in の `MinimizedMemorySaver` として足し、本体 Host だけで有効にした**（雛形の MainForm は変えない。サブウィンドウと同じく B で雛形に opt-in の手順を足して 0.7.0）。(3) 複数アプリでのユーザーデータフォルダ共有（案 A）は、利用者が同時に何本開くかを確かめてから。TrySuspend（D）、一覧の仮想化（E）、zod 検証（F）、VB の直列化（G）、ブラウザ引数（H）は見送り（理由は文書 §2）
+- 1 つの exe をランチャーにして窓で画面を増やす（B）のと別 exe との比較も文書 §3 に書いた（メモリは 1 exe が少ないが、UI スレッドとレンダラーを共有するので 1 画面の固まりが全部に及ぶ。勧めは「同じ業務はサブウィンドウ、別の業務は別 exe」）
+- **`MinimizedMemorySaver`（`MinimizedMemorySaver.vb`）**: `MinimizedMemorySaver.Attach(form, webView)`（Shared。EnsureCoreWebView2Async の前後どちらでもよい。同じ webView に 2 回呼んでも 1 回と同じ）。決めたこと:
+  - Form の `Resize` で `WindowState` を見て、最小化 → `webView.Visible = False`（WinForms の WebView2 が Controller の `IsVisible` に写す。描画用のメモリを手放せる）+ `CoreWebView2.MemoryUsageTargetLevel = Low`、戻す → `Normal` + 表示。WebView2 は親の Form の最小化に自分では気づかない（Microsoft は最小化・復元で `IsVisible` を切り替えるよう勧めている）
+  - Low はスクリプトも通信も止めないので、ブリッジ・通知・待ち中の呼び出しに影響しない。`TrySuspendAsync` は使わない（止まっている間の `PostWebMessageAsJson` の扱いが未確認。TrySuspend は Low も自動で掛けるので混ぜない）
+  - 非表示にすると WebView2 からフォーカスが外れるので、最小化の前に WebView2 にフォーカスがあれば戻すとき `form.ActiveControl = webView` にする。アプリが自分で隠していた WebView2 は戻すときも隠したまま
+  - 最小化したまま初期化が終わったら `CoreWebView2InitializationCompleted` で Low を掛ける。`MemoryUsageTargetLevel` が無い古い Runtime では `Debug.WriteLine` だけ（非表示は効く）
+  - Form の `FormClosed` か WebView2 の `Disposed` で外れる（RemoveHandler で外せるよう、ハンドラはイベントと同じ型の引数で受ける。VB の緩い変換を通すと外れない）。UI スレッドから呼ぶ前提で、登録済みの一覧は Shared の HashSet
+  - **`BridgeWindows` は、開いた側に掛かっていれば子ウィンドウにも掛ける**（Settings を開いた側から写すのと同じ考え方。`Friend Shared IsAttached`）
+- 本体 `dotnet/WebView2Bridge.Host/MainForm.vb`: `_windows.Attach(_bridge)` の後に `MinimizedMemorySaver.Attach(Me, WebView)`
+- **gen の同梱**: `VB_RUNTIME_FILES.winforms` と `sync-vb-runtime.mjs` に足した（WinForms 4 ファイル）。雛形の `Bridge/` は 4 ファイル、雛形の `pnpm gen` は 14 ファイルになった（`init.test.ts`、`generate.test.ts`、雛形 README、gen README、vb-runtime README、RELEASING.md を更新）。サブウィンドウ A と同じく、この環境では雛形に node_modules が無く `pnpm gen:template` が契約を読めないので、`emitVbRuntime("winforms")` で `Bridge/` だけを書き出した。**版は 0.6.0 のまま**（B で 0.7.0）
+- **計測スクリプト `scripts/measure-memory.ps1`**（リポジトリ直下。Windows PowerShell 5.1 / PowerShell 7、UTF-8 BOM 付き）: exe（`-Name`、既定 `WebView2Bridge.Host`）と子孫を `Win32_Process` の親子関係でたどり、コマンドラインの `--type=` / `--utility-sub-type=` で種類を付け、Private（コミット量）と WorkingSet を 1 行ずつ、最後に exe だけ / WebView2 だけ / 合計を出す。`-AllWebView2` で全 `msedgewebview2.exe` を足す（データフォルダを共有したとき）。雛形にはまだ入れていない（B で入れるか決める）
+- 検証（Linux、Claude Code on the web）: `pnpm -r typecheck`、`pnpm -r test`（client 40、gen 49、test 48、create 4、web screen 10）、`pnpm gen:check`（7 files）、`dotnet build dotnet/WebView2Bridge.sln`（Debug / Release とも 0 警告）、`dotnet test dotnet/WebView2Bridge.Contract.Tests`（19 件）、`pnpm gen init` で作ったアプリの MainForm に `MinimizedMemorySaver.Attach(Me, WebView)` を足して `dotnet build -c Release`（0 警告）。計測スクリプトは `dotnet tool install --global PowerShell --version 7.4.6` の pwsh で構文を確かめ、`Get-CimInstance` を模擬データに差し替えて種類分け・合計・`-AllWebView2`・起動していないときのエラーを確かめた。**WebView2 での効果と振る舞いは Windows 実機で未確認**（§14「最小化中の省メモリを Windows で確認する項目」）
+
 ## 11. CLAUDE.md（リポジトリ直下に置く内容）
 
 ```markdown
@@ -523,6 +539,7 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 7. 自動テスト（2026-09-22、§10 参照）: `packages/test` と雛形の `e2e/` を実装し、**0.5.0 として npm 4 つを公開、タグ v0.5.0 を push 済み（2026-09-22。`npm view` で 4 つとも `latest` が 0.5.0、公開版の tgz に `_npmrc` / `slnmix.config.json` / `e2e/` が入っていることを確認）**。**次は会社 PC で** `git pull` → `pnpm install` → `dotnet build dotnet/WebView2Bridge.sln`（Debug）→ `pnpm --filter web test:doctor` → `pnpm --filter web test:e2e`（api 4 件 + host 2 件）。その後、雛形から作った新規アプリ（当日は `pnpm create webview2-bridge@0.5.0 ...` と版を明示）で `pnpm test:all` まで確認する。DB ヘルパの SQL Server / Oracle 実機確認はテスト DB のある業務アプリで行う（`.env.e2e.local` と `db.allowedDatabases`）
 8. 雛形に `.gitattributes` と `allowBuilds.oracledb: false`（2026-10-06、§10 参照）: **0.5.1 として npm 4 つを公開、タグ v0.5.1 を push 済み（2026-10-06。`npm view` で 4 つとも `latest` が 0.5.1）**。公開版だけで `pnpm dlx create-webview2-bridge@0.5.1` → `.gitattributes` と `oracledb: false` が出力される → `pnpm install`（`minimumReleaseAgeExclude` が自動追記される）→ gen:check（11 files）→ web typecheck → build:web → screen 4 件、`core.autocrlf=true` の git で commit → checkout しても生成物が LF のまま、を Linux（Claude Code on the web）で確認した。0.5.0 以前で作ったアプリ（s-b 等）には §10 のとおり `.gitattributes` と `oracledb: false` を手で足す
 9. サブウィンドウのスナップ配置（2026-10-25、§10 参照、[docs/handoff/サブウィンドウのスナップ配置.md](docs/handoff/サブウィンドウのスナップ配置.md)）: `window.open` を `NewWindowRequested` でブリッジ付きの新しい WebView2 ウィンドウとして受け、features の位置へ置く `BridgeWindows` を WinForms ランタイムに足す。進め方は文書 §5（A: 本体 → B: 雛形に opt-in で入れて 0.7.0 → C: SBOM で使う）。あくまでオプション機能で、雛形でも既定は無効。**A を実装済み（2026-10-25、§10「サブウィンドウのスナップ配置 A」）**: WinForms ランタイムに `BridgeWindows` / `BroadcastEmitter`、本体 Host の MainForm だけで有効化、apps/web に `openScreen` と左右の見本ボタン、screen テスト 1 件。Linux でビルドとテストは通過。**次は下の「サブウィンドウ（A）を Windows で確認する項目」（未確認）→ B（雛形に opt-in、0.7.0 で公開）→ C（SBOM）**
+10. メモリ使用量（2026-10-25、§10「最小化中の省メモリと計測」、[docs/handoff/メモリ使用量.md](docs/handoff/メモリ使用量.md)）: 最小化中の省メモリ `MinimizedMemorySaver`（opt-in、本体で有効、子ウィンドウにも引き継ぐ）と計測スクリプト `scripts/measure-memory.ps1` を実装。Linux でビルドとテストは通過。**次は下の「最小化中の省メモリを Windows で確認する項目」（未確認）。複数アプリでのデータフォルダ共有（案 A）は、利用者が同時に開く本数を確かめてから**
 
 ### サブウィンドウ（A）を Windows で確認する項目（2026-10-25 時点で未確認）
 前提: `git pull` → `pnpm install` → `dotnet build dotnet/WebView2Bridge.sln`。Debug は `pnpm --filter web dev` を起動して `WEBVIEW2_BRIDGE_DEV_URL=http://localhost:5173` で `dotnet run --project dotnet/WebView2Bridge.Host`。Release は `pnpm --filter web build` → `dotnet build dotnet/WebView2Bridge.sln -c Release` → `dotnet/WebView2Bridge.Host/bin/Release/net48/WebView2Bridge.Host.exe`。見本はヘッダの「左に開く / 右に開く / 開いた窓を閉じる」
@@ -533,6 +550,15 @@ HANDOFF.md と CLAUDE.md を読んでから始めてください。
 5. **外部 http(s) は今まで通りブラウザへ**: 本体の DevTools（Debug）で `window.open("https://example.com")` → 既定のブラウザで開き、WebView2 の窓は増えない
 6. **Release で子ウィンドウでも F12 / F5 が効かない**: Release exe（環境変数なし）の子ウィンドウで F12 が開かず F5 / Ctrl+R で再読込されない。`set WEBVIEW2_BRIDGE_DEV=1` で起動すると効く
 7. **`name` 固定で同じ窓が再利用される**: 子で検索したあと本体の「右に開く」をもう一度押しても窓は増えず、子の検索結果が残っている。「開いた窓を閉じる」で子が閉じる（`WindowCloseRequested`）
+
+### 最小化中の省メモリを Windows で確認する項目（2026-10-25 時点で未確認）
+前提: サブウィンドウ（A）の確認と同じ。Release exe（`pnpm --filter web build` → `dotnet build dotnet/WebView2Bridge.sln -c Release`）で、DevTools を閉じて測る。計測は PowerShell で `.\scripts\measure-memory.ps1`（各場面 30 秒待ってから 3 回）。
+1. **今の値を取る**: 起動直後 / 検索して一覧を出した後 / サブウィンドウを左右に 2 枚開いた後（renderer の行が増えないか）。比較に純粋な WinForms の既存アプリも `-Name <exe 名>` で測る。数字を docs/handoff/メモリ使用量.md に書く
+2. **最小化で減る**: 本体を最小化して 1 分後に測り、WorkingSet（と Private）が手順 1 の起動直後より減る。元に戻すと画面がすぐ描かれ、検索できる
+3. **フォーカスが戻る**: 検索欄に入力中に最小化 → タスクバーから戻すと、そのままキーボードで入力が続けられる（戻らなければ `MinimizedMemorySaver.Apply` の `ActiveControl` を見直す）
+4. **最小化中も通信が止まらない**: 検索してすぐ最小化 → 戻すと結果と progress 100% が出ている（Low はスクリプトを止めない）
+5. **子ウィンドウにも効く**: 「右に開く」の子ウィンドウだけを最小化して 1 分後に測り、減る。戻すと描かれる
+6. **比較（任意）**: exe を 2 本起動した合計と、exe 1 本 + サブウィンドウ 1 枚の合計を比べる（1 つの exe で窓を増やす案の差。文書 §3）
 
 ### Windows での確認手順（Phase 3 の完了条件。2026-09-06 に確認済み。再確認用に残す）
 1. `git pull` 後、`pnpm install && pnpm gen:check && pnpm --filter web build`

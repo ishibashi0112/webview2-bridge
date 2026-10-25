@@ -1,0 +1,124 @@
+Option Strict On
+
+Imports System
+Imports System.Collections.Generic
+Imports System.Diagnostics
+Imports System.Windows.Forms
+Imports Microsoft.Web.WebView2.Core
+Imports Microsoft.Web.WebView2.WinForms
+
+Namespace Global.WebView2Bridge.WinForms
+
+''' <summary>
+''' 最小化している間、WebView2 にメモリを減らすよう伝える（オプション機能。使うアプリだけが MainForm で有効にする）。
+'''   最小化した → WebView2 を非表示（Controller.IsVisible = False。描画用のメモリを手放せる）にして MemoryUsageTargetLevel = Low
+'''   元に戻した → Normal に戻して表示する（最小化の前に WebView2 にフォーカスがあれば戻す）
+''' 親の Form が最小化されても WebView2 は自分では気づかない（Controller の IsVisible は Form の Resize を見て切り替えるよう Microsoft が勧めている）。
+''' Low ではスクリプトも通信も止まらないので、ブリッジの呼び出し・通知・待ち中の応答に影響しない
+''' （スクリプトまで止める TrySuspendAsync は使わない。止まっている間の PostWebMessageAsJson の扱いが確かめられていないため）。
+''' 効果はベストエフォート: 何をどれだけ手放すかは WebView2 Runtime 次第で、一部はディスクへ追い出されるだけ。戻すときに少し遅くなることがある。
+''' BridgeWindows の子ウィンドウには、開いた側で有効なら自動で掛かる。Form が閉じれば外れる。UI スレッドから呼ぶ。
+''' 使い方（MainForm。EnsureCoreWebView2Async の前後どちらでもよい）:
+'''   MinimizedMemorySaver.Attach(Me, WebView)
+''' </summary>
+Public NotInheritable Class MinimizedMemorySaver
+
+    ''' <summary>Attach 済みの WebView2（BridgeWindows が子ウィンドウに引き継ぐか決めるのと、二重に掛けないため）</summary>
+    Private Shared ReadOnly _attached As New HashSet(Of WebView2)()
+
+    Private ReadOnly _form As Form
+    Private ReadOnly _webView As WebView2
+    Private _minimized As Boolean
+    Private _wasVisible As Boolean
+    Private _refocus As Boolean
+
+    Private Sub New(form As Form, webView As WebView2)
+        _form = form
+        _webView = webView
+    End Sub
+
+    ''' <summary>
+    ''' form が最小化されている間、webView にメモリを減らすよう伝える。同じ webView に 2 回呼んでも 1 回と同じ。
+    ''' 既に最小化されていればすぐに掛ける
+    ''' </summary>
+    ''' <param name="form">webView を載せている Form（MainForm、子ウィンドウ）</param>
+    ''' <param name="webView">form の WebView2</param>
+    Public Shared Sub Attach(form As Form, webView As WebView2)
+        If form Is Nothing Then Throw New ArgumentNullException(NameOf(form))
+        If webView Is Nothing Then Throw New ArgumentNullException(NameOf(webView))
+        If Not _attached.Add(webView) Then Return
+        Dim saver As New MinimizedMemorySaver(form, webView)
+        ' RemoveHandler で外せるよう、イベントと同じ型の引数で受ける（VB の緩い変換を通すと外れない）
+        AddHandler form.Resize, AddressOf saver.OnResize
+        AddHandler form.FormClosed, AddressOf saver.OnFormClosed
+        AddHandler webView.Disposed, AddressOf saver.OnDisposed
+        AddHandler webView.CoreWebView2InitializationCompleted, AddressOf saver.OnInitialized
+        saver.Apply()
+    End Sub
+
+    ''' <summary>webView に Attach 済みか</summary>
+    Friend Shared Function IsAttached(webView As WebView2) As Boolean
+        Return webView IsNot Nothing AndAlso _attached.Contains(webView)
+    End Function
+
+    Private Sub OnResize(sender As Object, e As EventArgs)
+        Apply()
+    End Sub
+
+    ''' <summary>最小化したまま初期化が終わったとき（Low は CoreWebView2 ができてからでないと掛けられない）</summary>
+    Private Sub OnInitialized(sender As Object, e As CoreWebView2InitializationCompletedEventArgs)
+        If _minimized Then SetLevel(CoreWebView2MemoryUsageTargetLevel.Low)
+    End Sub
+
+    Private Sub Apply()
+        Dim minimized = _form.WindowState = FormWindowState.Minimized
+        If minimized = _minimized Then Return
+        _minimized = minimized
+        If minimized Then
+            ' 非表示にするとフォーカスが WebView2 から外れるので、戻すときのために覚えておく。アプリが自分で隠していた WebView2 は戻すときも隠したまま
+            _wasVisible = _webView.Visible
+            _refocus = _form.ActiveControl Is _webView OrElse _webView.ContainsFocus
+            _webView.Visible = False
+            SetLevel(CoreWebView2MemoryUsageTargetLevel.Low)
+        Else
+            SetLevel(CoreWebView2MemoryUsageTargetLevel.Normal)
+            _webView.Visible = _wasVisible
+            If _wasVisible AndAlso _refocus Then
+                Try
+                    _form.ActiveControl = _webView
+                Catch ex As Exception
+                    Debug.WriteLine($"[MinimizedMemorySaver] refocus: {ex.Message}")
+                End Try
+            End If
+        End If
+    End Sub
+
+    Private Sub SetLevel(level As CoreWebView2MemoryUsageTargetLevel)
+        Try
+            ' 初期化前は Nothing。最小化したまま初期化が終われば OnInitialized で掛ける
+            Dim core = _webView.CoreWebView2
+            If core IsNot Nothing Then core.MemoryUsageTargetLevel = level
+        Catch ex As Exception
+            ' 古い WebView2 Runtime（MemoryUsageTargetLevel が無い）や破棄中。非表示にするだけでも描画用のメモリは手放せる
+            Debug.WriteLine($"[MinimizedMemorySaver] MemoryUsageTargetLevel = {level}: {ex.Message}")
+        End Try
+    End Sub
+
+    Private Sub OnFormClosed(sender As Object, e As FormClosedEventArgs)
+        Detach()
+    End Sub
+
+    Private Sub OnDisposed(sender As Object, e As EventArgs)
+        Detach()
+    End Sub
+
+    Private Sub Detach()
+        If Not _attached.Remove(_webView) Then Return
+        RemoveHandler _form.Resize, AddressOf OnResize
+        RemoveHandler _form.FormClosed, AddressOf OnFormClosed
+        RemoveHandler _webView.Disposed, AddressOf OnDisposed
+        RemoveHandler _webView.CoreWebView2InitializationCompleted, AddressOf OnInitialized
+    End Sub
+End Class
+
+End Namespace
