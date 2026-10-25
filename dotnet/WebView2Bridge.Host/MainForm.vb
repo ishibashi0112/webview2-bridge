@@ -16,6 +16,7 @@ Imports WebView2Bridge.WinForms
 '''   それ以外は exe 隣の wwwroot を https://app.local/ にマッピングして index.html を開く
 '''   F12（開発者ツール）と F5 / Ctrl+R（再読込）などブラウザのショートカットは開発モード（DevMode）のときだけ有効
 '''   画面の window.open(自アプリの URL) はブリッジ付きの別ウィンドウ（BridgeWindows。オプション機能で、この見本では有効）
+'''   最小化している間は WebView2 にメモリを減らすよう伝える（MinimizedMemorySaver。オプション機能で、この見本では有効）
 ''' </summary>
 Public Class MainForm
 
@@ -68,6 +69,9 @@ Public Class MainForm
             ' 使わないアプリは NewWindowRequested で http(s) をブラウザに渡し、それ以外を止めるだけにする（雛形の MainForm の形）
             _windows = New BridgeWindows(env, dispatcher, Me, If(devUrl, $"https://{VirtualHost}/"), AddressOf MapVirtualHost)
             _windows.Attach(_bridge)
+            ' 最小化中の省メモリ（オプション機能。HANDOFF.md §10）: 最小化している間は WebView2 を非表示にして MemoryUsageTargetLevel を Low にする。
+            ' スクリプトと通信は止まらない。子ウィンドウには BridgeWindows が同じものを掛ける
+            MinimizedMemorySaver.Attach(Me, WebView)
             ' Host → Web の通知は開いている全部の窓に届く
             Dim events As New BridgeEvents(_windows.Emitter)
             dispatcher.Register(New PartsApi(events))

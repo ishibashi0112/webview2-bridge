@@ -20,6 +20,7 @@ Namespace Global.WebView2Bridge.WinForms
 ''' 新しいウィンドウは同じ CoreWebView2Environment と同じ Dispatcher を使い、e.NewWindow に渡すので
 ''' window.opener と window.open の戻り値（WindowProxy）が成立する（開いた側から close() できる。name が同じなら同じ窓が使われる）。
 ''' Settings（F12 / F5 等）は開いた側から全項目を写し、仮想ホストのマッピングのような CoreWebView2 ごとの設定は configure で掛ける。
+''' 開いた側に MinimizedMemorySaver（最小化中の省メモリ）を掛けていれば、子ウィンドウにも掛ける。
 ''' Host → Web の通知は Emitter が全窓に同報する。子ウィンドウは Owner を持たず（左右に並べるため）、owner が閉じると全部閉じる。
 ''' 使い方（MainForm、EnsureCoreWebView2Async の後。core.NewWindowRequested の既定の処理の代わり）:
 '''   _bridge = New WebViewBridge(WebView, dispatcher)
@@ -175,6 +176,7 @@ Public NotInheritable Class BridgeWindows
             child.Bridge.Attach()
             Subscribe(child, core, isChild:=True)
             _emitter.Add(child.Bridge)
+            If MinimizedMemorySaver.IsAttached(opener.WebView) Then MinimizedMemorySaver.Attach(child.Form, child.WebView)
             ' ここで渡すと Navigate は WebView2 が行い、window.opener と window.open の戻り値がこの窓を指す
             e.NewWindow = core
             e.Handled = True
