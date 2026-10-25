@@ -119,7 +119,7 @@ pnpm add @ishibashi0112/webview2-bridge-client zod
     "outDir": "dotnet/MyApp.Contract/Generated",
     "namespace": "MyApp.Contract",
     "runtime":  { "outDir": "dotnet/MyApp.Contract/Runtime" },   // JsonRpc / Dispatcher / IBridgeEmitter
-    "winforms": { "outDir": "dotnet/MyApp.Host/Bridge" }         // WebViewBridge
+    "winforms": { "outDir": "dotnet/MyApp.Host/Bridge" }         // WebViewBridge / BroadcastEmitter / BridgeWindows
   }
 }
 ```
@@ -127,12 +127,12 @@ pnpm add @ishibashi0112/webview2-bridge-client zod
 ```xml
 <!-- 契約プロジェクト（netstandard2.0）: Generated/ と Runtime/ は gen が書く -->
 <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-<!-- WinForms ホスト（net48）: Bridge/WebViewBridge.vb は gen が書く。PlatformTarget は x64 か x86 に固定する（AnyCPU だと WebView2Loader.dll が合わず起動時に落ちる） -->
+<!-- WinForms ホスト（net48）: Bridge/ の WebViewBridge.vb 等は gen が書く。PlatformTarget は x64 か x86 に固定する（AnyCPU だと WebView2Loader.dll が合わず起動時に落ちる） -->
 <PlatformTarget>x64</PlatformTarget>
-<!-- WinForms ホスト（net48）: Bridge/WebViewBridge.vb は gen が書く -->
+<!-- WinForms ホスト（net48）: Bridge/ の WebViewBridge.vb 等は gen が書く -->
 <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
 ```
 
-`webview2-bridge-gen` を実行すると 10 ファイル（schema、TS 型、VB 生成物 4、ランタイム 3、WebViewBridge 1）が書かれる。
+`webview2-bridge-gen` を実行すると 12 ファイル（schema、TS 型、VB 生成物 4、ランタイム 3、WinForms 3 = WebViewBridge / BroadcastEmitter / BridgeWindows）が書かれる。
 生成コードは `Imports WebView2Bridge.Runtime` を含み、`dispatcher.Register(api)` は拡張メソッドとして生える。
 NuGet 版を使う場合は `runtime` / `winforms` を書かず、上の PackageReference を `WebView2Bridge.Runtime` / `WebView2Bridge.WinForms` にする。

@@ -1,0 +1,51 @@
+Option Strict On
+
+Imports System
+Imports System.Collections.Generic
+Imports System.Diagnostics
+Imports WebView2Bridge.Runtime
+
+Namespace Global.WebView2Bridge.WinForms
+
+''' <summary>
+''' Host → Web の通知を、登録したすべての窓（WebViewBridge）へ同じ内容で送る IBridgeEmitter。
+''' 複数ウィンドウ（BridgeWindows）で生成 BridgeEvents に渡す: <c>New BridgeEvents(windows.Emitter)</c>。
+''' 閉じた窓は BridgeWindows が外す。どのスレッドから Emit してもよい（各 WebViewBridge が UI スレッドへマーシャリングする）。
+''' WebView2 には依存しないが、使うのは BridgeWindows なので WinForms 側に置く。
+''' </summary>
+Public NotInheritable Class BroadcastEmitter
+    Implements IBridgeEmitter
+
+    Private ReadOnly _gate As New Object()
+    Private ReadOnly _targets As New List(Of IBridgeEmitter)()
+
+    Public Sub Add(target As IBridgeEmitter)
+        If target Is Nothing Then Throw New ArgumentNullException(NameOf(target))
+        SyncLock _gate
+            If Not _targets.Contains(target) Then _targets.Add(target)
+        End SyncLock
+    End Sub
+
+    Public Sub Remove(target As IBridgeEmitter)
+        SyncLock _gate
+            _targets.Remove(target)
+        End SyncLock
+    End Sub
+
+    Public Sub Emit(method As String, params As Object) Implements IBridgeEmitter.Emit
+        Dim targets As IBridgeEmitter()
+        SyncLock _gate
+            targets = _targets.ToArray()
+        End SyncLock
+        For Each target In targets
+            Try
+                target.Emit(method, params)
+            Catch ex As Exception
+                ' 1 つの窓の失敗でほかの窓への通知を止めない
+                Debug.WriteLine($"[BroadcastEmitter] Emit failed: {ex.Message}")
+            End Try
+        Next
+    End Sub
+End Class
+
+End Namespace

@@ -54,6 +54,8 @@ describe("generate (with VB runtime output)", () => {
         "dotnet/App.Contract/Generated/Dispatcher.vb",
         "dotnet/App.Contract/Generated/IBridgeEmitter.vb",
         "dotnet/App.Host/Bridge/WebViewBridge.vb",
+        "dotnet/App.Host/Bridge/BroadcastEmitter.vb",
+        "dotnet/App.Host/Bridge/BridgeWindows.vb",
       ].sort(),
     );
     const generated = await readdir(path.join(dir, "dotnet/App.Contract/Generated"));
